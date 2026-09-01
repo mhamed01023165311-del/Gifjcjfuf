@@ -23,7 +23,7 @@ export interface NodeData {
   tags?: { label: string; color: string }[];
   link?: string;
   skills?: string[];
-  socials?: { platform: string; url: string }[];
+  socials?: { platform: string; url: string; icon?: string }[];
 }
 
 // Generate the initial nodes
@@ -40,11 +40,11 @@ export const getInitialNodes = (width: number, height: number): NodeData[] => {
 
   const nodes: NodeData[] = [];
 
-  // Center Profile Node
+  // Center Profile Node with your actual data and social links
   nodes.push({
     id: 'center-profile',
     type: 'profile',
-    label: 'MILES.DEV',
+    label: 'MOHAMED.DEV',
     color: '#FF0055', // Neon Red
     baseRadius: 140,
     baseX: cx,
@@ -53,75 +53,82 @@ export const getInitialNodes = (width: number, height: number): NodeData[] => {
     y: cy,
     currentRadius: 140,
     targetRadius: 140,
-    title: 'Miles Developer',
-    subtitle: 'Creative Frontend Engineer & Web Weaver',
-    description: "I'm a senior frontend developer specializing in interactive, motion-heavy web experiences. I swing between HTML5 Canvas, React, and GSAP to build experiences that leap off the screen.",
-    image: 'https://lh3.googleusercontent.com/d/1KvG3cNZy11_92tHC03pooOHCoyKCoFl4',
-    skills: ['React', 'TypeScript', 'GSAP', 'HTML5 Canvas', 'Tailwind CSS', 'Three.js'],
+    title: 'Mohamed Shaban Farghaly',
+    subtitle: 'Software Engineer & Game Developer',
+    description: "مطور برمجيات وألعاب شغوف بتطوير التطبيقات عبر المنصات المختلفة باستخدام Flutter و Native، وبناء الألعاب التفاعلية باستخدام Godot Engine و GDScript، بالإضافة إلى تصميم الحلول البرمجية الذكية وتطوير الويب.",
+    image: 'https://lh3.googleusercontent.com/d/1KvG3cNZy11_92tHC03pooOHCoyKCoFl4', // الصورة الشخصية الخاصة بك
+    skills: [
+      'Flutter',
+      'Java',
+      'Python',
+      'Godot Engine',
+      'GDScript',
+      'Web Technologies',
+      'Supabase',
+      'Firebase',
+      'UI/UX Design'
+    ],
     socials: [
-      { platform: 'GitHub', url: '#' },
-      { platform: 'Twitter / X', url: '#' },
-      { platform: 'LinkedIn', url: '#' }
+      { 
+        platform: 'WhatsApp', 
+        url: 'https://wa.me/201284302099' 
+      },
+      { 
+        platform: 'Facebook', 
+        url: 'https://facebook.com' 
+      },
+      { 
+        platform: 'Gmail', 
+        url: 'mailto:contact@mohamed.dev' 
+      }
     ]
   });
 
   // Project Nodes (Distributed organically across different web intersections)
-  // We use strandIndex (0-15) for angle and ringIndex (1-12) for distance.
   const projects = [
     {
-      strandIndex: 2, // Top Right-ish
+      strandIndex: 2, 
       ringIndex: 5,
       label: 'PROJ 01',
-      title: 'Neon E-Commerce',
-      desc: 'A cyberpunk-themed storefront with 3D product viewers and seamless page transitions powered by Framer Motion and GSAP.',
-      image: 'https://images.unsplash.com/photo-1515630278258-407f66498911?w=800&q=80',
-      tags: [{label: 'Next.js', color: '#00E5FF'}, {label: 'GSAP', color: '#88ce02'}],
-      color: '#00E5FF' // Cyan
+      title: 'Sign Language Teacher',
+      desc: 'تطبيق تفاعلي ذكي لتعليم لغة الإشارة يعتمد على تتبع حركة اليد عبر الكاميرا مع قاموس شامل لأكثر من 1000 كلمة.',
+      image: 'https://images.unsplash.com/photo-1534972195531-d756b9bfa9f2?w=800&q=80',
+      tags: [{label: 'Flutter', color: '#00E5FF'}, {label: 'AI Track', color: '#FF0055'}],
+      color: '#00E5FF' 
     },
     {
-      strandIndex: 6, // Bottom Right
+      strandIndex: 6, 
       ringIndex: 8,
       label: 'PROJ 02',
-      title: 'Web3 Analytics Dashboard',
-      desc: 'Real-time cryptocurrency tracking platform featuring custom D3 data visualizations and glowing glassmorphic UI components.',
-      image: 'https://images.unsplash.com/photo-1605806616949-1e87b487cb2a?w=800&q=80',
-      tags: [{label: 'React', color: '#00E5FF'}, {label: 'D3.js', color: '#FF007F'}],
-      color: '#FF007F' // Magenta
+      title: 'Chaos Stone Game',
+      desc: 'لعبة مغامرات وقصة تفاعلية متعددة النهايات تم تطويرها باستخدام محرك Godot بنمط رسومي Low-Poly وأدوات تحكم مخصصة للشاشات اللمسية.',
+      image: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800&q=80',
+      tags: [{label: 'Godot', color: '#FF0055'}, {label: '3D Game', color: '#00E5FF'}],
+      color: '#FF007F' 
     },
     {
-      strandIndex: 10, // Bottom Left
+      strandIndex: 10, 
       ringIndex: 6,
       label: 'PROJ 03',
-      title: 'Neural AI Generator',
-      desc: 'An AI-powered image generation interface with fluid prompt controls, real-time generation previews, and stylized loading states.',
-      image: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800&q=80',
-      tags: [{label: 'Vue', color: '#41b883'}, {label: 'Tailwind', color: '#38bdf8'}],
-      color: '#00E5FF' // Cyan
+      title: 'Dynamic Certificate Portal',
+      desc: 'منصة ويب مخصصة لتوليد وتعديل الشهادات التفاعلية بشكل لحظي مع خيارات تحكم متقدمة وتصدير الملفات بدقة عالية.',
+      image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80',
+      tags: [{label: 'Web Tech', color: '#00E5FF'}, {label: 'Tools', color: '#FF007F'}],
+      color: '#00E5FF' 
     },
     {
-      strandIndex: 13, // Top Left
+      strandIndex: 13, 
       ringIndex: 9,
       label: 'PROJ 04',
-      title: 'Immersive Game UI',
-      desc: 'Concept HUD and menu systems for a futuristic VR game. Built entirely with web technologies utilizing WebGL and Canvas API.',
-      image: 'https://images.unsplash.com/photo-1617802690992-15d93263d3a9?w=800&q=80',
-      tags: [{label: 'Three.js', color: '#fff'}, {label: 'Canvas', color: '#FF0055'}],
-      color: '#FF007F' // Magenta
-    },
-    {
-      strandIndex: 15, // Top Right
-      ringIndex: 4,
-      label: 'PROJ 05',
-      title: 'Interactive City Map',
-      desc: 'A heavily customized WebGL map showing real-time transit data through the lens of a retro-futuristic holographic display.',
-      image: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&q=80',
-      tags: [{label: 'Mapbox', color: '#00E5FF'}, {label: 'WebGL', color: '#FF0055'}],
-      color: '#00E5FF' // Cyan
+      title: 'Retro Emulation Configs',
+      desc: 'حلول وتعديلات مخصصة لتحسين أداء محاكيات الألعاب على الهواتف المحمولة وضبط الإطارات والتطبيقات المعقدة بسلاسة.',
+      image: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800&q=80',
+      tags: [{label: 'Optimization', color: '#FF0055'}, {label: 'Mobile', color: '#00E5FF'}],
+      color: '#FF007F' 
     }
   ];
 
   projects.forEach((proj, i) => {
-    // Calculate exact position on the web grid
     const angle = (proj.strandIndex / STRANDS) * Math.PI * 2; 
     const distance = (proj.ringIndex / RINGS) * maxRadius;
     const px = cx + Math.cos(angle) * distance;
@@ -143,7 +150,7 @@ export const getInitialNodes = (width: number, height: number): NodeData[] => {
       description: proj.desc,
       image: proj.image,
       tags: proj.tags,
-      link: 'https://github.com'
+      link: '#'
     });
   });
 
