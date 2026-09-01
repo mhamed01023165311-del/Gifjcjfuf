@@ -20,6 +20,9 @@ export default function App() {
   const [isAnimating, setIsAnimating] = useState(false);
   const loadedImages = useRef<Record<string, HTMLImageElement>>({});
 
+  // Local assets profile image path
+  const localProfilePath = '/assets/profile.jpg';
+
   // Mutable state for the physics loop
   const physicsState = useRef({
     nodes: [] as NodeData[],
@@ -44,7 +47,6 @@ export default function App() {
       physicsState.current.width = width;
       physicsState.current.height = height;
       
-      // Generate random organic micro-threads
       const micro = [];
       for (let i = 0; i < 100; i++) {
         const strand = Math.floor(Math.random() * STRANDS);
@@ -52,8 +54,8 @@ export default function App() {
         micro.push({
           strand,
           r1: rFactor,
-          r2: rFactor + (Math.random() * 0.08 - 0.04), // slightly offset the next anchor point
-          sag: 0.6 + Math.random() * 0.4 // randomize sag depth for realism
+          r2: rFactor + (Math.random() * 0.08 - 0.04),
+          sag: 0.6 + Math.random() * 0.4
         });
       }
       physicsState.current.microThreads = micro;
@@ -68,13 +70,22 @@ export default function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Load Images for Canvas
+  // Preload Profile and Node Images
   useEffect(() => {
+    // 1. Force Load local profile image from /assets/profile.jpg
+    const profileImg = new Image();
+    profileImg.src = localProfilePath;
+    profileImg.onload = () => {
+      loadedImages.current['profile'] = profileImg;
+      loadedImages.current['center'] = profileImg; // binding fallback
+    };
+
+    // 2. Load Node dynamic images
     nodes.forEach(node => {
-      if (node.image && !loadedImages.current[node.id]) {
+      const imgSrc = node.type === 'profile' ? localProfilePath : node.image;
+      if (imgSrc && !loadedImages.current[node.id]) {
         const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.src = node.image;
+        img.src = imgSrc;
         img.onload = () => { loadedImages.current[node.id] = img; };
       }
     });
@@ -103,52 +114,44 @@ export default function App() {
 
       // Physics Update
       currentNodes.forEach(node => {
-        // Skip physics for active node so it stays still under the modal
         if (node.id === activeNodeId) return;
 
         const dx = state.mouseX - node.x;
         const dy = state.mouseY - node.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
-        // Hover Effect: nodes repel slightly and expand
         if (dist < 120 && !activeNodeId) {
           node.targetRadius = node.baseRadius * 1.4;
-          // Gentle repel from mouse
           const repelStrength = (120 - dist) * 0.05;
           node.x -= (dx / dist) * repelStrength;
           node.y -= (dy / dist) * repelStrength;
         } else {
           node.targetRadius = node.baseRadius;
-          // Float around base position using sine waves
           const floatX = node.baseX + Math.sin(state.time + node.id.charCodeAt(0)) * 15;
           const floatY = node.baseY + Math.cos(state.time * 0.8 + (node.id.charCodeAt(1) || 0)) * 15;
           
-          // Spring back to base position firmly so it sticks to the web intersection
           node.x += (floatX - node.x) * 0.08;
           node.y += (floatY - node.y) * 0.08;
         }
 
-        // Smooth radius transition
         node.currentRadius += (node.targetRadius - node.currentRadius) * 0.15;
       });
 
-      // Drawing Edge-to-Edge Realistic Spider Web
+      // Drawing Edge-to-Edge Spider Web
       ctx.globalCompositeOperation = 'lighter';
       
       const center = currentNodes[0];
-      const maxR = Math.hypot(state.width / 2, state.height / 2) * 1.2; // Overshoot to cover corners
+      const maxR = Math.hypot(state.width / 2, state.height / 2) * 1.2;
       const stepAngle = (Math.PI * 2) / STRANDS;
       
-      // Calculate exactly the 2nd web ring radius for the profile frame
-      const baseProfileRadius = (2 / RINGS) * maxR;
+      // Increased frame radius for center profile
+      const baseProfileRadius = (2.2 / RINGS) * maxR;
       
-      // Dynamically update the center node base radius so it scales with screen
       if (activeNodeId !== center.id) {
         center.baseRadius = baseProfileRadius;
       }
       const frameRadius = center.currentRadius; 
       
-      // Helper to generate the organic curved path for web rings
       const buildWebRingPath = (radius: number) => {
         ctx.beginPath();
         for (let i = 0; i < STRANDS; i++) {
@@ -163,7 +166,7 @@ export default function App() {
           if (i === 0) ctx.moveTo(x1, y1);
           
           const midA = a1 + stepAngle / 2;
-          const sagRadius = radius * 0.85; // 15% sag inward
+          const sagRadius = radius * 0.88; 
           const cx = center.x + Math.cos(midA) * sagRadius;
           const cy = center.y + Math.sin(midA) * sagRadius;
 
@@ -172,7 +175,7 @@ export default function App() {
         ctx.closePath();
       };
 
-      // 1. Draw Radial Strands (start from inner frame edges, not exact center)
+      // 1. Radial Strands
       for (let i = 0; i < STRANDS; i++) {
         const angle = i * stepAngle;
         const startX = center.x + Math.cos(angle) * frameRadius;
@@ -183,27 +186,23 @@ export default function App() {
         ctx.beginPath();
         ctx.moveTo(startX, startY);
         ctx.lineTo(tx, ty);
-        // Bright glowing radial strands
         ctx.strokeStyle = i % 2 === 0 ? `rgba(0, 229, 255, 0.4)` : `rgba(255, 0, 85, 0.4)`;
         ctx.lineWidth = 1.5;
         ctx.stroke();
       }
 
-      // 2. Draw Concentric Rings (start from 3rd ring to leave room for the 2nd ring profile frame)
+      // 2. Concentric Rings
       for (let r = 3; r <= RINGS; r++) {
-        // Subtle ambient breathe effect scaling the web
         const breathe = Math.sin(state.time * 1.5 + r) * 4;
         const radius = (r / RINGS) * maxR + breathe;
 
         buildWebRingPath(radius);
-        
-        // Softer glowing ring threads
         ctx.strokeStyle = r % 2 === 0 ? `rgba(255, 0, 127, 0.25)` : `rgba(0, 229, 255, 0.25)`;
         ctx.lineWidth = 1;
         ctx.stroke();
       }
 
-      // 3. Draw Organic Micro-Threads (density and realism)
+      // 3. Organic Micro-Threads
       ctx.beginPath();
       state.microThreads.forEach(mt => {
         const a1 = mt.strand * stepAngle;
@@ -218,7 +217,7 @@ export default function App() {
 
         ctx.moveTo(x1, y1);
         const midA = a1 + stepAngle / 2;
-        const sagRadius = ((r1 + r2) / 2) * mt.sag; // randomized sag for wild threads
+        const sagRadius = ((r1 + r2) / 2) * mt.sag;
         const cx = center.x + Math.cos(midA) * sagRadius;
         const cy = center.y + Math.sin(midA) * sagRadius;
         
@@ -228,57 +227,47 @@ export default function App() {
       ctx.lineWidth = 0.5;
       ctx.stroke();
 
-      // Draw Nodes (Pods attached to web)
+      // Draw Nodes
       currentNodes.forEach(node => {
-        // If node is active, don't draw it on canvas (the DOM modal takes over)
         if (node.id === activeNodeId) return;
 
         if (node.type === 'profile') {
-          // Draw Profile Node Using Innermost Web Ring as Frame
-          ctx.globalCompositeOperation = 'source-over'; // Draw image normally
+          ctx.globalCompositeOperation = 'source-over';
           
           ctx.save();
           buildWebRingPath(node.currentRadius);
-          
-          // Clip rendering to the organic web path shape
           ctx.clip();
           
-          const img = loadedImages.current[node.id];
-          if (img) {
-            // Draw slightly larger than radius to cover the entire organic polygon bounds
-            const s = node.currentRadius * 2.2;
-            ctx.drawImage(img, node.x - s/2, node.y - s/2, s, s);
-            
-            // Add a subtle cyberpunk neon tint over the picture
-            ctx.fillStyle = `rgba(255, 0, 85, 0.25)`;
-            ctx.fill();
+          // Get profile image from assets
+          const img = loadedImages.current[node.id] || loadedImages.current['profile'];
+          if (img && img.complete && img.naturalWidth !== 0) {
+            const s = node.currentRadius * 2.4;
+            ctx.drawImage(img, node.x - s / 2, node.y - s / 2, s, s);
           } else {
             ctx.fillStyle = '#111';
             ctx.fill();
           }
           ctx.restore();
           
-          // Draw Glowing stroke on the profile frame (outside the clip)
+          // Glowing border
           ctx.save();
           buildWebRingPath(node.currentRadius);
-          ctx.strokeStyle = node.color;
+          ctx.strokeStyle = node.color || '#00E5FF';
           ctx.lineWidth = 4;
-          ctx.shadowColor = node.color;
+          ctx.shadowColor = node.color || '#00E5FF';
           ctx.shadowBlur = 25;
           ctx.stroke();
           ctx.restore();
           
-          // Label
           ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
           ctx.font = '600 16px "Space Grotesk"';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'top';
           ctx.fillText(node.label, node.x, node.y + node.currentRadius + 24);
         } else {
-          // Draw Outer Project Pods
+          // Project Pods
           ctx.globalCompositeOperation = 'lighter';
           
-          // Outer Glow
           ctx.beginPath();
           ctx.arc(node.x, node.y, node.currentRadius, 0, Math.PI * 2);
           ctx.fillStyle = node.color;
@@ -287,19 +276,16 @@ export default function App() {
           ctx.fill();
           ctx.shadowBlur = 0;
 
-          // Inner bright core
           ctx.beginPath();
           ctx.arc(node.x, node.y, node.currentRadius * 0.55, 0, Math.PI * 2);
           ctx.fillStyle = '#ffffff';
           ctx.fill();
 
-          // Pod cyber ring center
           ctx.beginPath();
           ctx.arc(node.x, node.y, node.currentRadius * 0.25, 0, Math.PI * 2);
           ctx.fillStyle = node.color;
           ctx.fill();
 
-          // Label
           ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
           ctx.font = '600 12px "Space Grotesk"';
           ctx.textAlign = 'center';
@@ -316,7 +302,6 @@ export default function App() {
     return () => cancelAnimationFrame(animationFrameId);
   }, [activeNodeId]);
 
-  // Event Listeners for Interaction
   const handleMouseMove = (e: React.MouseEvent) => {
     const rect = canvasRef.current?.getBoundingClientRect();
     if (rect) {
@@ -339,7 +324,6 @@ export default function App() {
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
 
-    // Check intersection with any node
     const clickedNode = physicsState.current.nodes.find(node => {
       const dx = mx - node.x;
       const dy = my - node.y;
@@ -351,7 +335,6 @@ export default function App() {
     }
   };
 
-  // GSAP Animations
   const openNode = (node: NodeData) => {
     if (!modalRef.current || !overlayRef.current || !contentRef.current) return;
     
@@ -362,14 +345,13 @@ export default function App() {
       onComplete: () => setIsAnimating(false)
     });
 
-    // 1. Initial State: Exactly match the canvas node
     gsap.set(modalRef.current, {
       left: node.x,
       top: node.y,
       width: node.currentRadius * 2,
       height: node.currentRadius * 2,
       backgroundColor: node.color,
-      borderRadius: node.type === 'profile' ? '40%' : '50%', // Profile uses organic web frame, so softer initial radius
+      borderRadius: node.type === 'profile' ? '40%' : '50%',
       xPercent: -50,
       yPercent: -50,
       opacity: 1,
@@ -377,7 +359,6 @@ export default function App() {
       pointerEvents: 'auto'
     });
 
-    // 2. Animate Background Blur Overlay & Canvas Scale
     tl.to(canvasRef.current, {
       scale: 1.1,
       duration: 0.7,
@@ -392,7 +373,6 @@ export default function App() {
       ease: 'power2.out'
     }, 0);
 
-    // 3. Expand the Node to Fullscreen
     tl.to(modalRef.current, {
       left: '50%',
       top: '50%',
@@ -406,7 +386,6 @@ export default function App() {
       ease: 'expo.out'
     }, 0);
 
-    // 4. Fade in inner content (staggered)
     gsap.set('.modal-stagger', { opacity: 0, scale: 0.95, y: 30 });
     tl.to('.modal-stagger', {
       opacity: 1,
@@ -433,7 +412,6 @@ export default function App() {
       }
     });
 
-    // 1. Fade out inner content
     tl.to('.modal-stagger', {
       opacity: 0,
       y: -20,
@@ -443,7 +421,6 @@ export default function App() {
       ease: 'power2.in'
     }, 0);
 
-    // 2. Shrink Fullscreen back to canvas node position
     tl.to(modalRef.current, {
       left: node.x,
       top: node.y,
@@ -457,7 +434,6 @@ export default function App() {
       ease: 'expo.inOut'
     }, 0.1);
 
-    // 3. Remove overlay blur & reset canvas scale
     tl.to(canvasRef.current, {
       scale: 1,
       duration: 0.6,
@@ -470,7 +446,6 @@ export default function App() {
       duration: 0.4
     }, 0.3);
 
-    // 4. Hide DOM modal entirely
     tl.to(modalRef.current, {
       opacity: 0,
       duration: 0.1
@@ -484,10 +459,8 @@ export default function App() {
       ref={containerRef} 
       className="relative w-full h-screen overflow-hidden bg-[#0b0c10] halftone-bg text-white selection:bg-[#FF0055] selection:text-white"
     >
-      {/* Background ambient glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[60vw] bg-[#FF0055] opacity-5 blur-[150px] rounded-full pointer-events-none" />
 
-      {/* Main Spiderweb Canvas */}
       <canvas 
         ref={canvasRef} 
         className="absolute inset-0 z-0 cursor-crosshair"
@@ -496,7 +469,6 @@ export default function App() {
         onClick={handleCanvasClick}
       />
 
-      {/* Blur Overlay */}
       <div 
         ref={overlayRef}
         className="absolute inset-0 z-10 bg-[#0b0c10]/40 opacity-0 pointer-events-none"
@@ -504,14 +476,12 @@ export default function App() {
         style={{ pointerEvents: activeNodeId && !isAnimating ? 'auto' : 'none' }}
       />
 
-      {/* Fullscreen GSAP Container */}
       <div 
         ref={modalRef}
         className="fixed z-20 flex flex-col overflow-hidden opacity-0 pointer-events-none"
       >
         <div ref={contentRef} className="w-full h-full relative overflow-y-auto p-6 md:p-12 lg:p-24 flex flex-col items-center justify-center">
           
-          {/* Close Button */}
           {activeNodeId && (
             <button 
               onClick={closeNode}
@@ -527,7 +497,7 @@ export default function App() {
               <div className="modal-stagger flex-shrink-0 relative group">
                 <div className="absolute inset-0 bg-[#FF0055] blur-2xl opacity-20 group-hover:opacity-40 transition-opacity duration-500 rounded-full" />
                 <img 
-                  src={activeNode.image} 
+                  src={localProfilePath} 
                   alt="Avatar" 
                   className="w-48 h-48 md:w-64 md:h-64 object-cover rounded-full border-2 border-[#FF0055] shadow-[0_0_30px_rgba(255,0,85,0.4)] relative z-10"
                 />
@@ -643,4 +613,3 @@ export default function App() {
     </div>
   );
 }
-
