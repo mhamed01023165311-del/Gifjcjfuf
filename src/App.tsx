@@ -8,6 +8,9 @@ import gsap from 'gsap';
 import { ExternalLink, X, Globe, Mail, MessageSquare, Code } from 'lucide-react';
 import { NodeData, getInitialNodes, STRANDS, RINGS } from './data';
 
+// الخروج من مجلد src ثم الدخول إلى public/assets
+import profileImgAsset from '../public/assets/profile.jpg'; 
+
 export default function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -20,16 +23,14 @@ export default function App() {
   const [isAnimating, setIsAnimating] = useState(false);
   const loadedImages = useRef<Record<string, HTMLImageElement>>({});
 
-  // Root-relative path for public/assets directory in Vite
-  const localProfilePath = '/assets/profile.jpg';
+  // المسار النسبي المباشر كخيار بديل
+  const localProfilePath = profileImgAsset || '../public/assets/profile.jpg';
 
-  // State for canvas background & pulse signals
+  // State for canvas background, pulses & project node impacts
   const physicsState = useRef({
-    nodes: [] as NodeData[],
+    nodes: [] as (NodeData & { impactGlow?: number })[],
     microThreads: [] as {strand: number, r1: number, r2: number, sag: number}[],
-    pulses: [] as {strand: number, progress: number, speed: number, color: string}[],
-    mouseX: -1000,
-    mouseY: -1000,
+    pulses: [] as {targetNodeId: string, progress: number, speed: number, color: string}[],
     time: 0,
     width: 0,
     height: 0,
@@ -48,7 +49,7 @@ export default function App() {
       physicsState.current.width = width;
       physicsState.current.height = height;
       
-      // Micro-threads for web realism
+      // Micro-threads
       const micro = [];
       for (let i = 0; i < 120; i++) {
         const strand = Math.floor(Math.random() * STRANDS);
@@ -62,22 +63,19 @@ export default function App() {
       }
       physicsState.current.microThreads = micro;
 
-      // Light Pulses along strands
-      const pulses = [];
-      for (let i = 0; i < STRANDS; i++) {
-        pulses.push({
-          strand: i,
-          progress: Math.random(),
-          speed: 0.003 + Math.random() * 0.005,
-          color: i % 2 === 0 ? '#00E5FF' : '#FF0055'
-        });
-      }
-      physicsState.current.pulses = pulses;
-
-      // Initial static nodes
-      const newNodes = getInitialNodes(width, height);
+      const newNodes = getInitialNodes(width, height).map(n => ({ ...n, impactGlow: 0 }));
       physicsState.current.nodes = newNodes;
       setNodes(newNodes);
+
+      // Create idea pulses specifically targeted ONLY at project nodes
+      const projectNodes = newNodes.filter(n => n.type === 'project');
+      const pulses = projectNodes.map(pNode => ({
+        targetNodeId: pNode.id,
+        progress: Math.random() * 0.8,
+        speed: 0.005 + Math.random() * 0.004,
+        color: pNode.color
+      }));
+      physicsState.current.pulses = pulses;
     };
 
     handleResize();
@@ -85,7 +83,7 @@ export default function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Preload Images
+  // Preload Profile Image
   useEffect(() => {
     const profileImg = new Image();
     profileImg.src = localProfilePath;
@@ -93,16 +91,7 @@ export default function App() {
       loadedImages.current['profile'] = profileImg;
       loadedImages.current['center'] = profileImg;
     };
-
-    nodes.forEach(node => {
-      const imgSrc = node.type === 'profile' ? localProfilePath : node.image;
-      if (imgSrc && !loadedImages.current[node.id]) {
-        const img = new Image();
-        img.src = imgSrc;
-        img.onload = () => { loadedImages.current[node.id] = img; };
-      }
-    });
-  }, [nodes]);
+  }, [localProfilePath]);
 
   // Canvas Render Loop
   useEffect(() => {
@@ -131,6 +120,12 @@ export default function App() {
         node.y = node.baseY;
         node.targetRadius = node.baseRadius;
         node.currentRadius += (node.targetRadius - node.currentRadius) * 0.1;
+
+        // Fade out impact glow effect
+        if (node.impactGlow && node.impactGlow > 0) {
+          node.impactGlow -= 0.03;
+          if (node.impactGlow < 0) node.impactGlow = 0;
+        }
       });
 
       const center = currentNodes[0];
@@ -177,7 +172,7 @@ export default function App() {
         ctx.beginPath();
         ctx.moveTo(startX, startY);
         ctx.lineTo(tx, ty);
-        ctx.strokeStyle = i % 2 === 0 ? `rgba(0, 229, 255, 0.25)` : `rgba(255, 0, 85, 0.25)`;
+        ctx.strokeStyle = i % 2 === 0 ? `rgba(0, 229, 255, 0.2)` : `rgba(255, 0, 85, 0.2)`;
         ctx.lineWidth = 1.2;
         ctx.stroke();
       }
@@ -186,7 +181,7 @@ export default function App() {
       for (let r = 2; r <= RINGS; r++) {
         const radius = (r / RINGS) * maxR;
         buildWebRingPath(radius);
-        ctx.strokeStyle = r % 2 === 0 ? `rgba(255, 0, 127, 0.15)` : `rgba(0, 229, 255, 0.15)`;
+        ctx.strokeStyle = r % 2 === 0 ? `rgba(255, 0, 127, 0.12)` : `rgba(0, 229, 255, 0.12)`;
         ctx.lineWidth = 0.8;
         ctx.stroke();
       }
@@ -212,28 +207,39 @@ export default function App() {
         
         ctx.quadraticCurveTo(cx, cy, x2, y2);
       });
-      ctx.strokeStyle = `rgba(255, 255, 255, 0.07)`;
+      ctx.strokeStyle = `rgba(255, 255, 255, 0.05)`;
       ctx.lineWidth = 0.5;
       ctx.stroke();
 
-      // 4. Moving Light Pulses
+      // 4. Idea Pulses moving directly from Center to Project Nodes ONLY
       state.pulses.forEach(p => {
+        const targetNode = currentNodes.find(n => n.id === p.targetNodeId);
+        if (!targetNode) return;
+
         p.progress += p.speed;
-        if (p.progress > 1) p.progress = 0;
 
-        const angle = p.strand * stepAngle;
-        const currentDist = frameRadius + p.progress * (maxR - frameRadius);
-        const px = center.x + Math.cos(angle) * currentDist;
-        const py = center.y + Math.sin(angle) * currentDist;
+        // Calculate direct line to project node
+        const px = center.x + (targetNode.x - center.x) * p.progress;
+        const py = center.y + (targetNode.y - center.y) * p.progress;
 
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(px, py, 3.5, 0, Math.PI * 2);
-        ctx.fillStyle = p.color;
-        ctx.shadowColor = p.color;
-        ctx.shadowBlur = 12;
-        ctx.fill();
-        ctx.restore();
+        // Check if pulse has reached the project node
+        const distToTarget = Math.hypot(targetNode.x - px, targetNode.y - py);
+        
+        if (distToTarget <= targetNode.currentRadius || p.progress >= 1) {
+          // Trigger project glow pulse & reset idea point
+          targetNode.impactGlow = 1.0; 
+          p.progress = 0; 
+        } else {
+          // Draw moving idea point
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(px, py, 4, 0, Math.PI * 2);
+          ctx.fillStyle = p.color;
+          ctx.shadowColor = p.color;
+          ctx.shadowBlur = 15;
+          ctx.fill();
+          ctx.restore();
+        }
       });
 
       // Draw Profile & Project Nodes
@@ -245,7 +251,7 @@ export default function App() {
           buildWebRingPath(node.currentRadius);
           ctx.clip();
           
-          const img = loadedImages.current[node.id] || loadedImages.current['profile'];
+          const img = loadedImages.current['profile'];
           if (img && img.complete && img.naturalWidth !== 0) {
             const s = node.currentRadius * 2.2;
             ctx.drawImage(img, node.x - s / 2, node.y - s / 2, s, s);
@@ -270,12 +276,16 @@ export default function App() {
           ctx.textBaseline = 'top';
           ctx.fillText(node.label, node.x, node.y + node.currentRadius + 18);
         } else {
+          // Project Pods
+          const glow = node.impactGlow || 0;
+          const currentGlowBlur = 25 + glow * 40; // Pulsing effect when hit
+
           ctx.save();
           ctx.beginPath();
-          ctx.arc(node.x, node.y, node.currentRadius, 0, Math.PI * 2);
+          ctx.arc(node.x, node.y, node.currentRadius + glow * 5, 0, Math.PI * 2);
           ctx.fillStyle = node.color;
           ctx.shadowColor = node.color;
-          ctx.shadowBlur = 25;
+          ctx.shadowBlur = currentGlowBlur;
           ctx.fill();
 
           ctx.beginPath();
@@ -288,7 +298,7 @@ export default function App() {
           ctx.font = '600 12px "Space Grotesk"';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'top';
-          ctx.fillText(node.label, node.x, node.y + node.currentRadius + 10);
+          ctx.fillText(node.label, node.x, node.y + node.currentRadius + 12);
         }
       });
 
