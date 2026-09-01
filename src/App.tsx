@@ -20,13 +20,14 @@ export default function App() {
   const [isAnimating, setIsAnimating] = useState(false);
   const loadedImages = useRef<Record<string, HTMLImageElement>>({});
 
-  // Local assets profile image path
+  // Root-relative path for public/assets directory in Vite
   const localProfilePath = '/assets/profile.jpg';
 
-  // Mutable state for the physics loop
+  // State for canvas background & pulse signals
   const physicsState = useRef({
     nodes: [] as NodeData[],
     microThreads: [] as {strand: number, r1: number, r2: number, sag: number}[],
+    pulses: [] as {strand: number, progress: number, speed: number, color: string}[],
     mouseX: -1000,
     mouseY: -1000,
     time: 0,
@@ -34,7 +35,7 @@ export default function App() {
     height: 0,
   });
 
-  // Initialize Canvas and Nodes
+  // Initialize Canvas and Static Nodes
   useEffect(() => {
     const handleResize = () => {
       if (!containerRef.current || !canvasRef.current) return;
@@ -47,19 +48,33 @@ export default function App() {
       physicsState.current.width = width;
       physicsState.current.height = height;
       
+      // Micro-threads for web realism
       const micro = [];
-      for (let i = 0; i < 100; i++) {
+      for (let i = 0; i < 120; i++) {
         const strand = Math.floor(Math.random() * STRANDS);
         const rFactor = 0.05 + Math.random() * 0.95;
         micro.push({
           strand,
           r1: rFactor,
           r2: rFactor + (Math.random() * 0.08 - 0.04),
-          sag: 0.6 + Math.random() * 0.4
+          sag: 0.7 + Math.random() * 0.3
         });
       }
       physicsState.current.microThreads = micro;
 
+      // Light Pulses along strands
+      const pulses = [];
+      for (let i = 0; i < STRANDS; i++) {
+        pulses.push({
+          strand: i,
+          progress: Math.random(),
+          speed: 0.003 + Math.random() * 0.005,
+          color: i % 2 === 0 ? '#00E5FF' : '#FF0055'
+        });
+      }
+      physicsState.current.pulses = pulses;
+
+      // Initial static nodes
       const newNodes = getInitialNodes(width, height);
       physicsState.current.nodes = newNodes;
       setNodes(newNodes);
@@ -70,17 +85,15 @@ export default function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Preload Profile and Node Images
+  // Preload Images
   useEffect(() => {
-    // 1. Force Load local profile image from /assets/profile.jpg
     const profileImg = new Image();
     profileImg.src = localProfilePath;
     profileImg.onload = () => {
       loadedImages.current['profile'] = profileImg;
-      loadedImages.current['center'] = profileImg; // binding fallback
+      loadedImages.current['center'] = profileImg;
     };
 
-    // 2. Load Node dynamic images
     nodes.forEach(node => {
       const imgSrc = node.type === 'profile' ? localProfilePath : node.image;
       if (imgSrc && !loadedImages.current[node.id]) {
@@ -91,7 +104,7 @@ export default function App() {
     });
   }, [nodes]);
 
-  // Canvas Drawing & Physics Loop
+  // Canvas Render Loop
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -102,7 +115,7 @@ export default function App() {
 
     const render = () => {
       const state = physicsState.current;
-      state.time += 0.02;
+      state.time += 0.015;
       
       ctx.clearRect(0, 0, state.width, state.height);
       
@@ -112,46 +125,24 @@ export default function App() {
         return;
       }
 
-      // Physics Update
       currentNodes.forEach(node => {
         if (node.id === activeNodeId) return;
-
-        const dx = state.mouseX - node.x;
-        const dy = state.mouseY - node.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-
-        if (dist < 120 && !activeNodeId) {
-          node.targetRadius = node.baseRadius * 1.4;
-          const repelStrength = (120 - dist) * 0.05;
-          node.x -= (dx / dist) * repelStrength;
-          node.y -= (dy / dist) * repelStrength;
-        } else {
-          node.targetRadius = node.baseRadius;
-          const floatX = node.baseX + Math.sin(state.time + node.id.charCodeAt(0)) * 15;
-          const floatY = node.baseY + Math.cos(state.time * 0.8 + (node.id.charCodeAt(1) || 0)) * 15;
-          
-          node.x += (floatX - node.x) * 0.08;
-          node.y += (floatY - node.y) * 0.08;
-        }
-
-        node.currentRadius += (node.targetRadius - node.currentRadius) * 0.15;
+        node.x = node.baseX;
+        node.y = node.baseY;
+        node.targetRadius = node.baseRadius;
+        node.currentRadius += (node.targetRadius - node.currentRadius) * 0.1;
       });
 
-      // Drawing Edge-to-Edge Spider Web
-      ctx.globalCompositeOperation = 'lighter';
-      
       const center = currentNodes[0];
-      const maxR = Math.hypot(state.width / 2, state.height / 2) * 1.2;
+      const maxR = Math.hypot(state.width / 2, state.height / 2) * 1.1;
       const stepAngle = (Math.PI * 2) / STRANDS;
       
-      // Increased frame radius for center profile
-      const baseProfileRadius = (2.2 / RINGS) * maxR;
-      
+      const baseProfileRadius = Math.min(state.width, state.height) * 0.12;
       if (activeNodeId !== center.id) {
         center.baseRadius = baseProfileRadius;
       }
       const frameRadius = center.currentRadius; 
-      
+
       const buildWebRingPath = (radius: number) => {
         ctx.beginPath();
         for (let i = 0; i < STRANDS; i++) {
@@ -166,7 +157,7 @@ export default function App() {
           if (i === 0) ctx.moveTo(x1, y1);
           
           const midA = a1 + stepAngle / 2;
-          const sagRadius = radius * 0.88; 
+          const sagRadius = radius * 0.92; 
           const cx = center.x + Math.cos(midA) * sagRadius;
           const cy = center.y + Math.sin(midA) * sagRadius;
 
@@ -175,7 +166,7 @@ export default function App() {
         ctx.closePath();
       };
 
-      // 1. Radial Strands
+      // 1. Radial Web Strands
       for (let i = 0; i < STRANDS; i++) {
         const angle = i * stepAngle;
         const startX = center.x + Math.cos(angle) * frameRadius;
@@ -186,23 +177,21 @@ export default function App() {
         ctx.beginPath();
         ctx.moveTo(startX, startY);
         ctx.lineTo(tx, ty);
-        ctx.strokeStyle = i % 2 === 0 ? `rgba(0, 229, 255, 0.4)` : `rgba(255, 0, 85, 0.4)`;
-        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = i % 2 === 0 ? `rgba(0, 229, 255, 0.25)` : `rgba(255, 0, 85, 0.25)`;
+        ctx.lineWidth = 1.2;
         ctx.stroke();
       }
 
-      // 2. Concentric Rings
-      for (let r = 3; r <= RINGS; r++) {
-        const breathe = Math.sin(state.time * 1.5 + r) * 4;
-        const radius = (r / RINGS) * maxR + breathe;
-
+      // 2. Concentric Web Rings
+      for (let r = 2; r <= RINGS; r++) {
+        const radius = (r / RINGS) * maxR;
         buildWebRingPath(radius);
-        ctx.strokeStyle = r % 2 === 0 ? `rgba(255, 0, 127, 0.25)` : `rgba(0, 229, 255, 0.25)`;
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = r % 2 === 0 ? `rgba(255, 0, 127, 0.15)` : `rgba(0, 229, 255, 0.15)`;
+        ctx.lineWidth = 0.8;
         ctx.stroke();
       }
 
-      // 3. Organic Micro-Threads
+      // 3. Micro Threads
       ctx.beginPath();
       state.microThreads.forEach(mt => {
         const a1 = mt.strand * stepAngle;
@@ -223,25 +212,42 @@ export default function App() {
         
         ctx.quadraticCurveTo(cx, cy, x2, y2);
       });
-      ctx.strokeStyle = `rgba(255, 255, 255, 0.12)`;
+      ctx.strokeStyle = `rgba(255, 255, 255, 0.07)`;
       ctx.lineWidth = 0.5;
       ctx.stroke();
 
-      // Draw Nodes
+      // 4. Moving Light Pulses
+      state.pulses.forEach(p => {
+        p.progress += p.speed;
+        if (p.progress > 1) p.progress = 0;
+
+        const angle = p.strand * stepAngle;
+        const currentDist = frameRadius + p.progress * (maxR - frameRadius);
+        const px = center.x + Math.cos(angle) * currentDist;
+        const py = center.y + Math.sin(angle) * currentDist;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(px, py, 3.5, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 12;
+        ctx.fill();
+        ctx.restore();
+      });
+
+      // Draw Profile & Project Nodes
       currentNodes.forEach(node => {
         if (node.id === activeNodeId) return;
 
         if (node.type === 'profile') {
-          ctx.globalCompositeOperation = 'source-over';
-          
           ctx.save();
           buildWebRingPath(node.currentRadius);
           ctx.clip();
           
-          // Get profile image from assets
           const img = loadedImages.current[node.id] || loadedImages.current['profile'];
           if (img && img.complete && img.naturalWidth !== 0) {
-            const s = node.currentRadius * 2.4;
+            const s = node.currentRadius * 2.2;
             ctx.drawImage(img, node.x - s / 2, node.y - s / 2, s, s);
           } else {
             ctx.fillStyle = '#111';
@@ -249,48 +255,40 @@ export default function App() {
           }
           ctx.restore();
           
-          // Glowing border
           ctx.save();
           buildWebRingPath(node.currentRadius);
           ctx.strokeStyle = node.color || '#00E5FF';
-          ctx.lineWidth = 4;
+          ctx.lineWidth = 3;
           ctx.shadowColor = node.color || '#00E5FF';
-          ctx.shadowBlur = 25;
+          ctx.shadowBlur = 20;
           ctx.stroke();
           ctx.restore();
           
           ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-          ctx.font = '600 16px "Space Grotesk"';
+          ctx.font = '600 15px "Space Grotesk"';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'top';
-          ctx.fillText(node.label, node.x, node.y + node.currentRadius + 24);
+          ctx.fillText(node.label, node.x, node.y + node.currentRadius + 18);
         } else {
-          // Project Pods
-          ctx.globalCompositeOperation = 'lighter';
-          
+          ctx.save();
           ctx.beginPath();
           ctx.arc(node.x, node.y, node.currentRadius, 0, Math.PI * 2);
           ctx.fillStyle = node.color;
           ctx.shadowColor = node.color;
-          ctx.shadowBlur = 35;
+          ctx.shadowBlur = 25;
           ctx.fill();
-          ctx.shadowBlur = 0;
 
           ctx.beginPath();
-          ctx.arc(node.x, node.y, node.currentRadius * 0.55, 0, Math.PI * 2);
+          ctx.arc(node.x, node.y, node.currentRadius * 0.5, 0, Math.PI * 2);
           ctx.fillStyle = '#ffffff';
           ctx.fill();
-
-          ctx.beginPath();
-          ctx.arc(node.x, node.y, node.currentRadius * 0.25, 0, Math.PI * 2);
-          ctx.fillStyle = node.color;
-          ctx.fill();
+          ctx.restore();
 
           ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
           ctx.font = '600 12px "Space Grotesk"';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'top';
-          ctx.fillText(node.label, node.x, node.y + node.currentRadius + 12);
+          ctx.fillText(node.label, node.x, node.y + node.currentRadius + 10);
         }
       });
 
@@ -301,19 +299,6 @@ export default function App() {
 
     return () => cancelAnimationFrame(animationFrameId);
   }, [activeNodeId]);
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (rect) {
-      physicsState.current.mouseX = e.clientX - rect.left;
-      physicsState.current.mouseY = e.clientY - rect.top;
-    }
-  };
-
-  const handleMouseLeave = () => {
-    physicsState.current.mouseX = -1000;
-    physicsState.current.mouseY = -1000;
-  };
 
   const handleCanvasClick = (e: React.MouseEvent) => {
     if (isAnimating || activeNodeId) return;
@@ -360,7 +345,7 @@ export default function App() {
     });
 
     tl.to(canvasRef.current, {
-      scale: 1.1,
+      scale: 1.05,
       duration: 0.7,
       ease: 'power2.out'
     }, 0);
@@ -463,9 +448,7 @@ export default function App() {
 
       <canvas 
         ref={canvasRef} 
-        className="absolute inset-0 z-0 cursor-crosshair"
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
+        className="absolute inset-0 z-0 cursor-pointer"
         onClick={handleCanvasClick}
       />
 
@@ -582,16 +565,6 @@ export default function App() {
                       color: activeNode.color,
                       boxShadow: `0 0 15px ${activeNode.color}40, inset 0 0 10px ${activeNode.color}20`
                     }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = activeNode.color;
-                      e.currentTarget.style.color = '#000';
-                      e.currentTarget.style.boxShadow = `0 0 30px ${activeNode.color}`;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = `${activeNode.color}20`;
-                      e.currentTarget.style.color = activeNode.color;
-                      e.currentTarget.style.boxShadow = `0 0 15px ${activeNode.color}40, inset 0 0 10px ${activeNode.color}20`;
-                    }}
                   >
                     <ExternalLink size={20} />
                     Live Preview
@@ -613,3 +586,4 @@ export default function App() {
     </div>
   );
 }
+
