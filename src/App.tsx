@@ -20,7 +20,6 @@ export default function App() {
   const [isAnimating, setIsAnimating] = useState(false);
   const loadedImages = useRef<Record<string, HTMLImageElement>>({});
 
-  // طريقة Vite المضمونة لربط الصورة من مجلد public/assets بغض النظر عن البيئة
   const localProfilePath = new URL('../public/assets/profile.jpg', import.meta.url).href;
 
   const physicsState = useRef({
@@ -61,12 +60,11 @@ export default function App() {
       physicsState.current.nodes = newNodes;
       setNodes(newNodes);
 
-      // تحديد النقط فقط للمشاريع الموجودة فعلياً
       const projectNodes = newNodes.filter(n => n.type === 'project');
       const pulses = projectNodes.map(pNode => ({
         targetNodeId: pNode.id,
-        progress: Math.random() * 0.7, // يبدأ من مسافة عشوائية بين المركز والمشروع
-        speed: 0.006 + Math.random() * 0.004,
+        progress: Math.random() * 0.6,
+        speed: 0.005 + Math.random() * 0.003,
         color: pNode.color
       }));
       physicsState.current.pulses = pulses;
@@ -77,7 +75,6 @@ export default function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // تحميل الصورة والتأكد منها
   useEffect(() => {
     const profileImg = new Image();
     profileImg.src = localProfilePath;
@@ -113,7 +110,6 @@ export default function App() {
         node.targetRadius = node.baseRadius;
         node.currentRadius += (node.targetRadius - node.currentRadius) * 0.1;
 
-        // تلاشي نبضة الانفجار الضوئي عند وصول النقطة
         if (node.impactGlow && node.impactGlow > 0) {
           node.impactGlow -= 0.04;
           if (node.impactGlow < 0) node.impactGlow = 0;
@@ -203,16 +199,16 @@ export default function App() {
       ctx.lineWidth = 0.5;
       ctx.stroke();
 
-      // 4. انطلاق النقط فقط على خيوط المشاريع وتوقفها تماماً عند الوصول
+      // 4. النبضات العصبية (Neural Pulses) - رفيعة ودقيقة داخل مسار الخيط
       state.pulses.forEach(p => {
         const targetNode = currentNodes.find(n => n.id === p.targetNodeId);
         if (!targetNode) return;
 
         p.progress += p.speed;
 
-        // حساب النقطة بين المركز وحافة دائرية المشروع
-        const startX = center.x;
-        const startY = center.y;
+        const angle = Math.atan2(targetNode.y - center.y, targetNode.x - center.x);
+        const startX = center.x + Math.cos(angle) * frameRadius;
+        const startY = center.y + Math.sin(angle) * frameRadius;
         const endX = targetNode.x;
         const endY = targetNode.y;
 
@@ -221,24 +217,42 @@ export default function App() {
 
         const distToTarget = Math.hypot(endX - currentX, endY - currentY);
 
-        // عند التماس مع المشروع: إعطاء نبضة ضوئية ورسوب النقطة من المركز مجدداً
         if (distToTarget <= targetNode.currentRadius || p.progress >= 1.0) {
           targetNode.impactGlow = 1.0; 
           p.progress = 0; 
         } else {
-          // رسم النقطة فقط طالما هي في الطريق
+          // رسم الشرارة العصبية: خط ساطع رفيع مع توهج دقيق
           ctx.save();
+          
+          // ذيل الشرارة الخفيف
+          const tailLength = 15;
+          const tailX = currentX - Math.cos(angle) * tailLength;
+          const tailY = currentY - Math.sin(angle) * tailLength;
+
+          const gradient = ctx.createLinearGradient(tailX, tailY, currentX, currentY);
+          gradient.addColorStop(0, 'transparent');
+          gradient.addColorStop(1, p.color);
+
           ctx.beginPath();
-          ctx.arc(currentX, currentY, 4.5, 0, Math.PI * 2);
-          ctx.fillStyle = p.color;
+          ctx.moveTo(tailX, tailY);
+          ctx.lineTo(currentX, currentY);
+          ctx.strokeStyle = gradient;
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+
+          // رأس الشرارة الدقيق جداً
+          ctx.beginPath();
+          ctx.arc(currentX, currentY, 1.2, 0, Math.PI * 2);
+          ctx.fillStyle = '#ffffff';
           ctx.shadowColor = p.color;
-          ctx.shadowBlur = 12;
+          ctx.shadowBlur = 6;
           ctx.fill();
+          
           ctx.restore();
         }
       });
 
-      // رسم العناصر (البروفايل والمشاريع)
+      // رسم العناصر
       currentNodes.forEach(node => {
         if (node.id === activeNodeId) return;
 
@@ -272,10 +286,9 @@ export default function App() {
           ctx.textBaseline = 'top';
           ctx.fillText(node.label, node.x, node.y + node.currentRadius + 18);
         } else {
-          // عقيدات المشاريع + النبضة الضوئية الخفيفة عند الارتطام
           const glow = node.impactGlow || 0;
-          const currentRadius = node.currentRadius + glow * 4;
-          const currentGlowBlur = 20 + glow * 35;
+          const currentRadius = node.currentRadius + glow * 3;
+          const currentGlowBlur = 20 + glow * 30;
 
           ctx.save();
           ctx.beginPath();
@@ -483,7 +496,7 @@ export default function App() {
           )}
 
           {activeNode?.type === 'profile' && (
-            <div className="flex-1 flex flex-col lg:flex-row gap-8 items-center lg:items-start justify-center pt-8">
+            <div className="flex-1 flex flex-col lg:flex-row gap-8 items-center lg:items-start justify-center pt-8 dir-rtl text-right">
               <div className="modal-stagger flex-shrink-0 relative group">
                 <div className="absolute inset-0 bg-[#FF0055] blur-2xl opacity-20 group-hover:opacity-40 transition-opacity duration-500 rounded-full" />
                 <img 
@@ -492,19 +505,19 @@ export default function App() {
                   className="w-48 h-48 md:w-64 md:h-64 object-cover rounded-full border-2 border-[#FF0055] shadow-[0_0_30px_rgba(255,0,85,0.4)] relative z-10"
                 />
               </div>
-              <div className="flex-1 flex flex-col items-center lg:items-start text-center lg:text-left">
-                <h1 className="modal-stagger text-4xl md:text-6xl font-bold glitch-text mb-2 tracking-tighter uppercase">
+              <div className="flex-1 flex flex-col items-center lg:items-start text-center lg:text-right">
+                <h1 className="modal-stagger text-3xl md:text-5xl font-bold glitch-text mb-2 tracking-tight">
                   {activeNode.title}
                 </h1>
-                <p className="modal-stagger text-xl text-[#00E5FF] font-medium mb-6 uppercase tracking-widest">
+                <p className="modal-stagger text-lg md:text-xl text-[#00E5FF] font-medium mb-6 tracking-wide">
                   {activeNode.subtitle}
                 </p>
-                <p className="modal-stagger text-gray-300 text-lg md:text-xl max-w-2xl leading-relaxed mb-8">
+                <p className="modal-stagger text-gray-300 text-base md:text-lg max-w-2xl leading-relaxed mb-8">
                   {activeNode.description}
                 </p>
                 
                 <div className="modal-stagger w-full max-w-2xl mb-8">
-                  <h3 className="text-[#FF007F] font-bold uppercase tracking-wider mb-4 border-b border-[#FF007F]/30 pb-2">Tech Arsenal</h3>
+                  <h3 className="text-[#FF007F] font-bold uppercase tracking-wider mb-4 border-b border-[#FF007F]/30 pb-2">Tech Arsenal & Skills</h3>
                   <div className="flex flex-wrap justify-center lg:justify-start gap-3">
                     {activeNode.skills?.map(skill => (
                       <span key={skill} className="px-4 py-2 rounded-full text-sm font-semibold bg-white/5 border border-white/10 hover:border-[#00E5FF] hover:text-[#00E5FF] hover:shadow-[0_0_10px_rgba(0,229,255,0.3)] transition-all cursor-default">
@@ -530,7 +543,7 @@ export default function App() {
           )}
 
           {activeNode?.type === 'project' && (
-            <div className="flex-1 flex flex-col h-full">
+            <div className="flex-1 flex flex-col h-full dir-rtl text-right">
               <div className="modal-stagger w-full h-48 md:h-72 lg:h-[40vh] rounded-xl overflow-hidden relative mb-8 border border-white/10 group">
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0b0c10] via-transparent to-transparent z-10" />
                 <img 
@@ -538,7 +551,7 @@ export default function App() {
                   alt={activeNode.title}
                   className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
                 />
-                <div className="absolute top-4 left-4 z-20 flex gap-2">
+                <div className="absolute top-4 right-4 z-20 flex gap-2">
                   {activeNode.tags?.map(tag => (
                     <span 
                       key={tag.label} 
