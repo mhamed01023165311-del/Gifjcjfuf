@@ -1,0 +1,6 @@
+{
+  "name": "Spider-Verse Portfolio",
+  "description": "An interactive, neon cyberpunk portfolio inspired by Miles Morales / Spider-Verse featuring an HTML5 Canvas web and smooth GSAP zoom transitions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
