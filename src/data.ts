@@ -75,12 +75,12 @@ export const getInitialNodes = (width: number, height: number): NodeData[] => {
       strandIndex: 2, 
       ringIndex: 4.5, 
       label: 'PROJ 01',
-      title: 'Market & Shopping Store',
-      desc: 'منصة تسوق متكاملة وعروض حية للمنتجات والماركت تم ربطها برابط المعاينة المباشرة.',
+      title: 'منصة التجارة الإلكترونية الشاملة (مثل Amazon & Noon)',
+      desc: 'منصة تسوق إلكتروني احترافية متكاملة تعمل على سيرفر وقاعدة بيانات حية. تدعم إدارة حسابات المستخدمين بالكامل، وتتميز بلوحة تحكم وإدارة متقدمة تتيح إضافة وتعديل المنتجات بسهولة تامة، متابعة واستقبال الأوردرات والطلبات أولاً باول، مع إمكانية تخصيص وتغيير ألوان وواجهات المنصة بالكامل لتجربة تسوق عالمية.',
       image: 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=800&q=80',
-      tags: [{label: 'Store', color: '#00E5FF'}, {label: 'E-Commerce', color: '#00E5FF'}],
+      tags: [{label: 'E-Commerce', color: '#00E5FF'}, {label: 'Full-Stack', color: '#00E5FF'}],
       link: 'https://remix-falcon-8429.ai.studio',
-      icon: 'cart', // أيقونة سلة التسوق للمشروع الأول
+      icon: 'cart',
       color: '#00E5FF' 
     },
     {
