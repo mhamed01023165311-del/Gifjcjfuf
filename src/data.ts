@@ -20,6 +20,7 @@ export interface NodeData {
   image?: string;
   tags?: { label: string; color: string }[];
   link?: string;
+  icon?: string;
   skills?: string[];
   socials?: { platform: string; url: string }[];
 }
@@ -63,41 +64,35 @@ export const getInitialNodes = (width: number, height: number): NodeData[] => {
       'UI/UX Design'
     ],
     socials: [
-      { 
-        platform: 'WhatsApp', 
-        url: 'https://wa.me/201284302099'
-      },
-      { 
-        platform: 'Call', 
-        url: 'tel:01019920811'
-      },
-      { 
-        platform: 'Telegram', 
-        url: 'https://t.me/Falcon2006_bot'
-      }
+      { platform: 'WhatsApp', url: 'https://wa.me/201284302099' },
+      { platform: 'Call', url: 'tel:01019920811' },
+      { platform: 'Telegram', url: 'https://t.me/Falcon2006_bot' }
     ]
   });
 
-  // تم تعديل وتوزيع الأماكن (ringIndex) بعناية لتبقى كل المشاريع (1 و 2 و 3 و 4) داخل حدود الشاشة تماماً
   const projects = [
     {
       strandIndex: 2, 
       ringIndex: 4.5, 
       label: 'PROJ 01',
-      title: 'Sign Language Teacher',
-      desc: 'تطبيق تفاعلي ذكي لتعليم لغة الإشارة يعتمد على تتبع حركة اليد عبر الكاميرا مع قاموس شامل لأكثر من 1000 كلمة.',
-      image: 'https://images.unsplash.com/photo-1534972195531-d756b9bfa9f2?w=800&q=80',
-      tags: [{label: 'Flutter', color: '#00E5FF'}, {label: 'AI Track', color: '#00E5FF'}],
+      title: 'Market & Shopping Store',
+      desc: 'منصة تسوق متكاملة وعروض حية للمنتجات والماركت تم ربطها برابط المعاينة المباشرة.',
+      image: 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=800&q=80',
+      tags: [{label: 'Store', color: '#00E5FF'}, {label: 'E-Commerce', color: '#00E5FF'}],
+      link: 'https://remix-falcon-8429.ai.studio',
+      icon: 'cart', // أيقونة سلة التسوق للمشروع الأول
       color: '#00E5FF' 
     },
     {
-      strandIndex: 5, // تم تعديل الزاوية والمسافة لضمان عدم خروج مشروع 2 بره الشاشة
+      strandIndex: 5, 
       ringIndex: 4.2, 
       label: 'PROJ 02',
       title: 'Chaos Stone Game',
-      desc: 'لعبة مغامرات وقصة تفاعلية متعددة النهايات تم تطويرها باستخدام محرك Godot بنمط رسومي Low-Poly وأدوات تحكم مخصصة.',
+      desc: 'لعبة مغامرات وقصة تفاعلية متعددة النهايات تم تطويرها باستخدام محرك Godot بنمط رسومي Low-Poly.',
       image: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800&q=80',
       tags: [{label: 'Godot', color: '#00E5FF'}, {label: '3D Game', color: '#00E5FF'}],
+      link: '#',
+      icon: 'gamepad',
       color: '#00E5FF' 
     },
     {
@@ -105,19 +100,23 @@ export const getInitialNodes = (width: number, height: number): NodeData[] => {
       ringIndex: 4.5, 
       label: 'PROJ 03',
       title: 'Dynamic Certificate Portal',
-      desc: 'منصة ويب مخصصة لتوليد وتعديل الشهادات التفاعلية بشكل لحظي مع خيارات تحكم متقدمة وتصدير الملفات.',
+      desc: 'منصة ويب مخصصة لتوليد وتعديل الشهادات التفاعلية بشكل لحظي مع خيارات تحكم متقدمة.',
       image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80',
       tags: [{label: 'Web Tech', color: '#00E5FF'}, {label: 'Tools', color: '#00E5FF'}],
+      link: '#',
+      icon: 'code',
       color: '#00E5FF' 
     },
     {
       strandIndex: 13, 
       ringIndex: 4.5, 
       label: 'PROJ 04',
-      title: 'Retro Emulation Configs',
-      desc: 'حلول وتعديلات مخصصة لتحسين أداء محاكيات الألعاب على الهواتف المحمولة وضبط الإطارات والتطبيقات المعقدة.',
-      image: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800&q=80',
-      tags: [{label: 'Optimization', color: '#00E5FF'}, {label: 'Mobile', color: '#00E5FF'}],
+      title: 'Sign Language Teacher',
+      desc: 'تطبيق تفاعلي ذكي لتعليم لغة الإشارة يعتمد على تتبع حركة اليد عبر الكاميرا.',
+      image: 'https://images.unsplash.com/photo-1534972195531-d756b9bfa9f2?w=800&q=80',
+      tags: [{label: 'Flutter', color: '#00E5FF'}, {label: 'AI Track', color: '#00E5FF'}],
+      link: '#',
+      icon: 'cpu',
       color: '#00E5FF' 
     }
   ];
@@ -133,18 +132,19 @@ export const getInitialNodes = (width: number, height: number): NodeData[] => {
       type: 'project',
       label: proj.label,
       color: '#00E5FF',
-      baseRadius: 25,
+      baseRadius: 28,
       baseX: px,
       baseY: py,
       x: px,
       y: py,
-      currentRadius: 25,
-      targetRadius: 25,
+      currentRadius: 28,
+      targetRadius: 28,
       title: proj.title,
       description: proj.desc,
       image: proj.image,
       tags: proj.tags,
-      link: '#'
+      link: proj.link,
+      icon: proj.icon
     });
   });
 
