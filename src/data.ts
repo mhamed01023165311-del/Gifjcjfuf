@@ -21,7 +21,7 @@ export interface NodeData {
   tags?: { label: string; color: string }[];
   link?: string;
   skills?: string[];
-  socials?: { platform: string; url: string; icon: string }[];
+  socials?: { platform: string; url: string }[];
 }
 
 export const STRANDS = 16;
@@ -34,19 +34,19 @@ export const getInitialNodes = (width: number, height: number): NodeData[] => {
 
   const nodes: NodeData[] = [];
 
-  // Profile Node (تم تغيير الألوان لتوحيد النسق مع الأزرق النيون الفخم)
+  // Profile Node
   nodes.push({
     id: 'center-profile',
     type: 'profile',
     label: 'MOHAMED.DEV',
-    color: '#00E5FF', // لون أزرق نيون متناسق وفخم
-    baseRadius: 140,
+    color: '#00E5FF',
+    baseRadius: 130,
     baseX: cx,
     baseY: cy,
     x: cx,
     y: cy,
-    currentRadius: 140,
-    targetRadius: 140,
+    currentRadius: 130,
+    targetRadius: 130,
     title: 'Mohamed Shaban Farghaly',
     subtitle: 'Software Engineer & Game Developer',
     description: "مهندس برمجيات ومطور ألعاب متكامل. متخصص في هندسة وبناء التطبيقات عبر المنصات باستخدام Flutter، وتصميم الأنظمة الذكية، وتطوير ألعاب تفاعلية غامرة باستخدام Godot Engine ببراعة تقنية عالية.",
@@ -65,26 +65,24 @@ export const getInitialNodes = (width: number, height: number): NodeData[] => {
     socials: [
       { 
         platform: 'WhatsApp', 
-        url: 'https://wa.me/201284302099',
-        icon: 'MessageSquare'
+        url: 'https://wa.me/201284302099'
       },
       { 
         platform: 'Call', 
-        url: 'tel:01019920811',
-        icon: 'Phone'
+        url: 'tel:01019920811'
       },
       { 
         platform: 'Telegram', 
-        url: 'https://t.me/share/url?url=', // أو رابط البوت المباشر الخاص بك
-        icon: 'Send'
+        url: 'https://t.me/Falcon2006_bot'
       }
     ]
   });
 
+  // تم تعديل وتوزيع الأماكن (ringIndex) بعناية لتبقى كل المشاريع (1 و 2 و 3 و 4) داخل حدود الشاشة تماماً
   const projects = [
     {
       strandIndex: 2, 
-      ringIndex: 5,
+      ringIndex: 4.5, 
       label: 'PROJ 01',
       title: 'Sign Language Teacher',
       desc: 'تطبيق تفاعلي ذكي لتعليم لغة الإشارة يعتمد على تتبع حركة اليد عبر الكاميرا مع قاموس شامل لأكثر من 1000 كلمة.',
@@ -93,8 +91,8 @@ export const getInitialNodes = (width: number, height: number): NodeData[] => {
       color: '#00E5FF' 
     },
     {
-      strandIndex: 6, 
-      ringIndex: 8,
+      strandIndex: 5, // تم تعديل الزاوية والمسافة لضمان عدم خروج مشروع 2 بره الشاشة
+      ringIndex: 4.2, 
       label: 'PROJ 02',
       title: 'Chaos Stone Game',
       desc: 'لعبة مغامرات وقصة تفاعلية متعددة النهايات تم تطويرها باستخدام محرك Godot بنمط رسومي Low-Poly وأدوات تحكم مخصصة.',
@@ -104,7 +102,7 @@ export const getInitialNodes = (width: number, height: number): NodeData[] => {
     },
     {
       strandIndex: 10, 
-      ringIndex: 6,
+      ringIndex: 4.5, 
       label: 'PROJ 03',
       title: 'Dynamic Certificate Portal',
       desc: 'منصة ويب مخصصة لتوليد وتعديل الشهادات التفاعلية بشكل لحظي مع خيارات تحكم متقدمة وتصدير الملفات.',
@@ -114,7 +112,7 @@ export const getInitialNodes = (width: number, height: number): NodeData[] => {
     },
     {
       strandIndex: 13, 
-      ringIndex: 9,
+      ringIndex: 4.5, 
       label: 'PROJ 04',
       title: 'Retro Emulation Configs',
       desc: 'حلول وتعديلات مخصصة لتحسين أداء محاكيات الألعاب على الهواتف المحمولة وضبط الإطارات والتطبيقات المعقدة.',
@@ -134,7 +132,7 @@ export const getInitialNodes = (width: number, height: number): NodeData[] => {
       id: `project-${i}`,
       type: 'project',
       label: proj.label,
-      color: proj.color,
+      color: '#00E5FF',
       baseRadius: 25,
       baseX: px,
       baseY: py,
@@ -148,10 +146,6 @@ export const getInitialNodes = (width: number, height: number): NodeData[] => {
       tags: proj.tags,
       link: '#'
     });
-  });
-
-  nodes.forEach(node => {
-    node.color = '#00E5FF';
   });
 
   return nodes;
