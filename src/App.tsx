@@ -5,7 +5,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
-import { ExternalLink, X, Code, MessageSquare, Phone, Send } from 'lucide-react';
+import { ExternalLink, X, Code, MessageSquare, Phone, Send, Monitor } from 'lucide-react';
 import { NodeData, getInitialNodes, STRANDS, RINGS } from './data';
 
 export default function App() {
@@ -18,6 +18,7 @@ export default function App() {
   const [nodes, setNodes] = useState<NodeData[]>([]);
   const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [showIframe, setShowIframe] = useState(false);
   const loadedImages = useRef<Record<string, HTMLImageElement>>({});
 
   const localProfilePath = new URL('../public/assets/profile.jpg', import.meta.url).href;
@@ -172,77 +173,6 @@ export default function App() {
         ctx.stroke();
       }
 
-      ctx.beginPath();
-      state.microThreads.forEach(mt => {
-        const a1 = mt.strand * stepAngle;
-        const a2 = ((mt.strand + 1) % STRANDS) * stepAngle;
-        const r1 = frameRadius + mt.r1 * (maxR - frameRadius);
-        const r2 = frameRadius + mt.r2 * (maxR - frameRadius);
-
-        const x1 = center.x + Math.cos(a1) * r1;
-        const y1 = center.y + Math.sin(a1) * r1;
-        const x2 = center.x + Math.cos(a2) * r2;
-        const y2 = center.y + Math.sin(a2) * r2;
-
-        ctx.moveTo(x1, y1);
-        const midA = a1 + stepAngle / 2;
-        const sagRadius = ((r1 + r2) / 2) * mt.sag;
-        const cx = center.x + Math.cos(midA) * sagRadius;
-        const cy = center.y + Math.sin(midA) * sagRadius;
-        
-        ctx.quadraticCurveTo(cx, cy, x2, y2);
-      });
-      ctx.strokeStyle = `rgba(255, 255, 255, 0.03)`;
-      ctx.lineWidth = 0.5;
-      ctx.stroke();
-
-      state.pulses.forEach(p => {
-        const targetNode = currentNodes.find(n => n.id === p.targetNodeId);
-        if (!targetNode) return;
-
-        p.progress += p.speed;
-
-        const angle = Math.atan2(targetNode.y - center.y, targetNode.x - center.x);
-        const startX = center.x + Math.cos(angle) * frameRadius;
-        const startY = center.y + Math.sin(angle) * frameRadius;
-        const endX = targetNode.x;
-        const endY = targetNode.y;
-
-        const currentX = startX + (endX - startX) * p.progress;
-        const currentY = startY + (endY - startY) * p.progress;
-
-        const distToTarget = Math.hypot(endX - currentX, endY - currentY);
-
-        if (distToTarget <= targetNode.currentRadius || p.progress >= 1.0) {
-          targetNode.impactGlow = 1.0; 
-          p.progress = 0; 
-        } else {
-          ctx.save();
-          const tailLength = 15;
-          const tailX = currentX - Math.cos(angle) * tailLength;
-          const tailY = currentY - Math.sin(angle) * tailLength;
-
-          const gradient = ctx.createLinearGradient(tailX, tailY, currentX, currentY);
-          gradient.addColorStop(0, 'transparent');
-          gradient.addColorStop(1, '#00E5FF');
-
-          ctx.beginPath();
-          ctx.moveTo(tailX, tailY);
-          ctx.lineTo(currentX, currentY);
-          ctx.strokeStyle = gradient;
-          ctx.lineWidth = 1.5;
-          ctx.stroke();
-
-          ctx.beginPath();
-          ctx.arc(currentX, currentY, 1.2, 0, Math.PI * 2);
-          ctx.fillStyle = '#ffffff';
-          ctx.shadowColor = '#00E5FF';
-          ctx.shadowBlur = 6;
-          ctx.fill();
-          ctx.restore();
-        }
-      });
-
       currentNodes.forEach(node => {
         if (node.id === activeNodeId) return;
 
@@ -283,15 +213,25 @@ export default function App() {
           ctx.save();
           ctx.beginPath();
           ctx.arc(node.x, node.y, currentRadius, 0, Math.PI * 2);
-          ctx.fillStyle = '#00E5FF';
+          ctx.fillStyle = '#0b0c10';
           ctx.shadowColor = '#00E5FF';
           ctx.shadowBlur = currentGlowBlur;
           ctx.fill();
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = '#00E5FF';
+          ctx.stroke();
 
-          ctx.beginPath();
-          ctx.arc(node.x, node.y, currentRadius * 0.45, 0, Math.PI * 2);
-          ctx.fillStyle = '#ffffff';
-          ctx.fill();
+          ctx.fillStyle = '#00E5FF';
+          ctx.font = '14px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+
+          let iconChar = '💻';
+          if (node.icon === 'cart') iconChar = '🛒';
+          else if (node.icon === 'gamepad') iconChar = '🎮';
+          else if (node.icon === 'cpu') iconChar = '🧠';
+
+          ctx.fillText(iconChar, node.x, node.y);
           ctx.restore();
 
           ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
@@ -335,6 +275,7 @@ export default function App() {
     
     setIsAnimating(true);
     setActiveNodeId(node.id);
+    setShowIframe(false);
 
     const tl = gsap.timeline({
       onComplete: () => setIsAnimating(false)
@@ -399,6 +340,7 @@ export default function App() {
     if (!node || !modalRef.current || !overlayRef.current) return;
 
     setIsAnimating(true);
+    setShowIframe(false);
 
     const tl = gsap.timeline({
       onComplete: () => {
@@ -536,7 +478,6 @@ export default function App() {
                     <span>Call</span>
                   </a>
 
-                  {/* تم تعديل رابط التيليجرام هنا ليفتح بوتك Falcon2006_bot مباشرة */}
                   <a 
                     href="https://t.me/Falcon2006_bot" 
                     target="_blank" 
@@ -552,54 +493,75 @@ export default function App() {
           )}
 
           {activeNode?.type === 'project' && (
-            <div className="flex-1 flex flex-col h-full dir-rtl text-right">
-              <div className="modal-stagger w-full h-48 md:h-72 lg:h-[40vh] rounded-xl overflow-hidden relative mb-8 border border-white/10 group">
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0b0c10] via-transparent to-transparent z-10" />
-                <img 
-                  src={activeNode.image} 
-                  alt={activeNode.title}
-                  className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
-                />
-                <div className="absolute top-4 right-4 z-20 flex gap-2">
-                  {activeNode.tags?.map(tag => (
-                    <span 
-                      key={tag.label} 
-                      className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-md bg-black/50 border text-[#00E5FF] border-[#00E5FF]/50"
+            <div className="flex-1 flex flex-col h-full dir-rtl text-right w-full">
+              {showIframe ? (
+                <div className="flex-1 flex flex-col h-full w-full animate-fadeIn">
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="text-[#00E5FF] font-bold text-lg">معاينة مباشرة: {activeNode.title}</span>
+                    <button 
+                      onClick={() => setShowIframe(false)}
+                      className="px-4 py-2 bg-white/15 hover:bg-white/25 text-white rounded-lg text-sm font-bold transition-all border border-white/20 cursor-pointer"
                     >
-                      {tag.label}
-                    </span>
-                  ))}
+                      الرجوع للتفاصيل
+                    </button>
+                  </div>
+                  <div className="flex-1 w-full h-[75vh] rounded-xl overflow-hidden border border-[#00E5FF]/30 bg-black">
+                    <iframe 
+                      src={activeNode.link} 
+                      title={activeNode.title}
+                      className="w-full h-full border-0"
+                    />
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <>
+                  <div className="modal-stagger w-full h-48 md:h-72 lg:h-[40vh] rounded-xl overflow-hidden relative mb-8 border border-white/10 group">
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0b0c10] via-transparent to-transparent z-10" />
+                    <img 
+                      src={activeNode.image} 
+                      alt={activeNode.title}
+                      className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
+                    />
+                    <div className="absolute top-4 right-4 z-20 flex gap-2">
+                      {activeNode.tags?.map(tag => (
+                        <span 
+                          key={tag.label} 
+                          className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-md bg-black/50 border text-[#00E5FF] border-[#00E5FF]/50"
+                        >
+                          {tag.label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
 
-              <div className="flex flex-col lg:flex-row justify-between items-start gap-8">
-                <div className="flex-1">
-                  <h2 className="modal-stagger text-3xl md:text-5xl font-bold mb-4 uppercase tracking-tighter text-[#00E5FF]" style={{ textShadow: `0 0 20px rgba(0,229,255,0.5)` }}>
-                    {activeNode.title}
-                  </h2>
-                  <p className="modal-stagger text-gray-300 text-lg leading-relaxed max-w-3xl">
-                    {activeNode.description}
-                  </p>
-                </div>
-                <div className="modal-stagger flex-shrink-0 flex flex-col gap-4 w-full lg:w-auto">
-                  <a 
-                    href={activeNode.link} 
-                    target="_blank" 
-                    rel="noreferrer"
-                    className="flex items-center justify-center gap-2 px-8 py-4 font-bold uppercase tracking-widest transition-all rounded-lg bg-[#00E5FF]/20 border border-[#00E5FF] text-[#00E5FF] shadow-[0_0_15px_rgba(0,229,255,0.4)]"
-                  >
-                    <ExternalLink size={20} />
-                    Live Preview
-                  </a>
-                  <a 
-                    href="#" 
-                    className="flex items-center justify-center gap-2 px-8 py-4 font-bold uppercase tracking-widest text-white border border-white/20 rounded-lg hover:bg-white/5 transition-colors"
-                  >
-                    <Code size={20} />
-                    Source Code
-                  </a>
-                </div>
-              </div>
+                  <div className="flex flex-col lg:flex-row justify-between items-start gap-8">
+                    <div className="flex-1">
+                      <h2 className="modal-stagger text-3xl md:text-5xl font-bold mb-4 uppercase tracking-tighter text-[#00E5FF]" style={{ textShadow: `0 0 20px rgba(0,229,255,0.5)` }}>
+                        {activeNode.title}
+                      </h2>
+                      <p className="modal-stagger text-gray-300 text-lg leading-relaxed max-w-3xl">
+                        {activeNode.description}
+                      </p>
+                    </div>
+                    <div className="modal-stagger flex-shrink-0 flex flex-col gap-4 w-full lg:w-auto">
+                      <button 
+                        onClick={() => setShowIframe(true)}
+                        className="flex items-center justify-center gap-2 px-8 py-4 font-bold uppercase tracking-widest transition-all rounded-lg bg-[#00E5FF]/20 border border-[#00E5FF] text-[#00E5FF] shadow-[0_0_15px_rgba(0,229,255,0.4)] hover:bg-[#00E5FF]/30 cursor-pointer"
+                      >
+                        <Monitor size={20} />
+                        تشغيل داخل الموقع
+                      </button>
+                      <a 
+                        href="#" 
+                        className="flex items-center justify-center gap-2 px-8 py-4 font-bold uppercase tracking-widest text-white border border-white/20 rounded-lg hover:bg-white/5 transition-colors"
+                      >
+                        <Code size={20} />
+                        Source Code
+                      </a>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
