@@ -5,7 +5,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
-import { ExternalLink, X, Code, MessageSquare, Phone, Send, Monitor } from 'lucide-react';
+import { X, MessageSquare, Phone, Send, ExternalLink } from 'lucide-react';
 import { NodeData, getInitialNodes, STRANDS, RINGS } from './data';
 
 export default function App() {
@@ -18,7 +18,6 @@ export default function App() {
   const [nodes, setNodes] = useState<NodeData[]>([]);
   const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
-  const [showIframe, setShowIframe] = useState(false);
   const loadedImages = useRef<Record<string, HTMLImageElement>>({});
 
   const localProfilePath = new URL('../public/assets/profile.jpg', import.meta.url).href;
@@ -221,17 +220,41 @@ export default function App() {
           ctx.strokeStyle = '#00E5FF';
           ctx.stroke();
 
+          // رسم الأيقونات المخصصة داخل الكانفاس
+          ctx.strokeStyle = '#00E5FF';
+          ctx.lineWidth = 2;
           ctx.fillStyle = '#00E5FF';
-          ctx.font = '14px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
 
-          let iconChar = '💻';
-          if (node.icon === 'cart') iconChar = '🛒';
-          else if (node.icon === 'gamepad') iconChar = '🎮';
-          else if (node.icon === 'cpu') iconChar = '🧠';
+          if (node.icon === 'cart') {
+            ctx.beginPath();
+            ctx.moveTo(node.x - 7, node.y - 5);
+            ctx.lineTo(node.x - 3, node.y - 5);
+            ctx.lineTo(node.x + 2, node.y + 3);
+            ctx.lineTo(node.x + 7, node.y + 3);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(node.x - 2, node.y + 7, 1.5, 0, Math.PI * 2);
+            ctx.arc(node.x + 5, node.y + 7, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+          } else if (node.icon === 'gamepad') {
+            ctx.beginPath();
+            ctx.roundRect(node.x - 9, node.y - 5, 18, 10, 4);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(node.x - 4, node.y, 1.5, 0, Math.PI * 2);
+            ctx.arc(node.x + 4, node.y, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+          } else {
+            ctx.beginPath();
+            ctx.moveTo(node.x - 5, node.y - 4);
+            ctx.lineTo(node.x - 9, node.y);
+            ctx.lineTo(node.x - 5, node.y + 4);
+            ctx.moveTo(node.x + 5, node.y - 4);
+            ctx.lineTo(node.x + 9, node.y);
+            ctx.lineTo(node.x + 5, node.y + 4);
+            ctx.stroke();
+          }
 
-          ctx.fillText(iconChar, node.x, node.y);
           ctx.restore();
 
           ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
@@ -275,7 +298,6 @@ export default function App() {
     
     setIsAnimating(true);
     setActiveNodeId(node.id);
-    setShowIframe(false);
 
     const tl = gsap.timeline({
       onComplete: () => setIsAnimating(false)
@@ -340,7 +362,6 @@ export default function App() {
     if (!node || !modalRef.current || !overlayRef.current) return;
 
     setIsAnimating(true);
-    setShowIframe(false);
 
     const tl = gsap.timeline({
       onComplete: () => {
@@ -421,7 +442,7 @@ export default function App() {
           {activeNodeId && (
             <button 
               onClick={closeNode}
-              className="modal-stagger fixed top-8 right-8 md:top-12 md:right-12 p-3 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 hover:scale-110 transition-all z-30 backdrop-blur-md text-[#00E5FF] border-[#00E5FF]/40"
+              className="modal-stagger fixed top-8 right-8 md:top-12 md:right-12 p-3 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 hover:scale-110 transition-all z-30 backdrop-blur-md text-[#00E5FF] border-[#00E5FF]/40 cursor-pointer"
             >
               <X size={32} />
             </button>
@@ -493,75 +514,47 @@ export default function App() {
           )}
 
           {activeNode?.type === 'project' && (
-            <div className="flex-1 flex flex-col h-full dir-rtl text-right w-full">
-              {showIframe ? (
-                <div className="flex-1 flex flex-col h-full w-full animate-fadeIn">
-                  <div className="flex justify-between items-center mb-4">
-                    <span className="text-[#00E5FF] font-bold text-lg">معاينة مباشرة: {activeNode.title}</span>
-                    <button 
-                      onClick={() => setShowIframe(false)}
-                      className="px-4 py-2 bg-white/15 hover:bg-white/25 text-white rounded-lg text-sm font-bold transition-all border border-white/20 cursor-pointer"
+            <div className="flex-1 flex flex-col h-full dir-rtl text-right w-full justify-center">
+              <div className="modal-stagger w-full h-48 md:h-72 lg:h-[35vh] rounded-xl overflow-hidden relative mb-8 border border-white/10 group">
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0b0c10] via-transparent to-transparent z-10" />
+                <img 
+                  src={activeNode.image} 
+                  alt={activeNode.title}
+                  className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
+                />
+                <div className="absolute top-4 right-4 z-20 flex gap-2">
+                  {activeNode.tags?.map(tag => (
+                    <span 
+                      key={tag.label} 
+                      className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-md bg-black/50 border text-[#00E5FF] border-[#00E5FF]/50"
                     >
-                      الرجوع للتفاصيل
-                    </button>
-                  </div>
-                  <div className="flex-1 w-full h-[75vh] rounded-xl overflow-hidden border border-[#00E5FF]/30 bg-black">
-                    <iframe 
-                      src={activeNode.link} 
-                      title={activeNode.title}
-                      className="w-full h-full border-0"
-                    />
-                  </div>
+                      {tag.label}
+                    </span>
+                  ))}
                 </div>
-              ) : (
-                <>
-                  <div className="modal-stagger w-full h-48 md:h-72 lg:h-[40vh] rounded-xl overflow-hidden relative mb-8 border border-white/10 group">
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0b0c10] via-transparent to-transparent z-10" />
-                    <img 
-                      src={activeNode.image} 
-                      alt={activeNode.title}
-                      className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
-                    />
-                    <div className="absolute top-4 right-4 z-20 flex gap-2">
-                      {activeNode.tags?.map(tag => (
-                        <span 
-                          key={tag.label} 
-                          className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-md bg-black/50 border text-[#00E5FF] border-[#00E5FF]/50"
-                        >
-                          {tag.label}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+              </div>
 
-                  <div className="flex flex-col lg:flex-row justify-between items-start gap-8">
-                    <div className="flex-1">
-                      <h2 className="modal-stagger text-3xl md:text-5xl font-bold mb-4 uppercase tracking-tighter text-[#00E5FF]" style={{ textShadow: `0 0 20px rgba(0,229,255,0.5)` }}>
-                        {activeNode.title}
-                      </h2>
-                      <p className="modal-stagger text-gray-300 text-lg leading-relaxed max-w-3xl">
-                        {activeNode.description}
-                      </p>
-                    </div>
-                    <div className="modal-stagger flex-shrink-0 flex flex-col gap-4 w-full lg:w-auto">
-                      <button 
-                        onClick={() => setShowIframe(true)}
-                        className="flex items-center justify-center gap-2 px-8 py-4 font-bold uppercase tracking-widest transition-all rounded-lg bg-[#00E5FF]/20 border border-[#00E5FF] text-[#00E5FF] shadow-[0_0_15px_rgba(0,229,255,0.4)] hover:bg-[#00E5FF]/30 cursor-pointer"
-                      >
-                        <Monitor size={20} />
-                        تشغيل داخل الموقع
-                      </button>
-                      <a 
-                        href="#" 
-                        className="flex items-center justify-center gap-2 px-8 py-4 font-bold uppercase tracking-widest text-white border border-white/20 rounded-lg hover:bg-white/5 transition-colors"
-                      >
-                        <Code size={20} />
-                        Source Code
-                      </a>
-                    </div>
-                  </div>
-                </>
-              )}
+              <div className="flex flex-col lg:flex-row justify-between items-start gap-8">
+                <div className="flex-1">
+                  <h2 className="modal-stagger text-3xl md:text-5xl font-bold mb-4 uppercase tracking-tighter text-[#00E5FF]" style={{ textShadow: `0 0 20px rgba(0,229,255,0.5)` }}>
+                    {activeNode.title}
+                  </h2>
+                  <p className="modal-stagger text-gray-300 text-lg leading-relaxed max-w-3xl">
+                    {activeNode.description}
+                  </p>
+                </div>
+                <div className="modal-stagger flex-shrink-0 flex flex-col gap-4 w-full lg:w-auto">
+                  <a 
+                    href={activeNode.link} 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="flex items-center justify-center gap-2 px-8 py-4 font-bold uppercase tracking-widest transition-all rounded-lg bg-[#00E5FF]/20 border border-[#00E5FF] text-[#00E5FF] shadow-[0_0_15px_rgba(0,229,255,0.4)] hover:bg-[#00E5FF]/30 cursor-pointer"
+                  >
+                    <ExternalLink size={20} />
+                    فتح رابط الموقع
+                  </a>
+                </div>
+              </div>
             </div>
           )}
 
