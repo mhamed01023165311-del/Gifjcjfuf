@@ -172,6 +172,45 @@ export default function App() {
         ctx.stroke();
       }
 
+      // رسم النقط المضيئة المتحركة في الخيوط وإحداث الوميض
+      state.pulses.forEach(pulse => {
+        const targetNode = currentNodes.find(n => n.id === pulse.targetNodeId);
+        if (!targetNode) return;
+
+        const pIndex = currentNodes.indexOf(targetNode);
+        const projItem = (getInitialNodes(state.width, state.height)).find(n => n.id === pulse.targetNodeId);
+        // للتعرف على رقم الخط التابع له المشروع
+        let sIdx = 2;
+        if (pIndex === 1) sIdx = 2;
+        else if (pIndex === 2) sIdx = 5;
+        else if (pIndex === 3) sIdx = 10;
+        else if (pIndex === 4) sIdx = 13;
+
+        const angle = sIdx * stepAngle;
+        const startX = center.x + Math.cos(angle) * frameRadius;
+        const startY = center.y + Math.sin(angle) * frameRadius;
+        const endX = targetNode.x;
+        const endY = targetNode.y;
+
+        pulse.progress += pulse.speed;
+        if (pulse.progress >= 1) {
+          pulse.progress = 0;
+          targetNode.impactGlow = 1; // حدوث الوميض عند وصول النقطة للمشروع
+        }
+
+        const px = startX + (endX - startX) * pulse.progress;
+        const py = startY + (endY - startY) * pulse.progress;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(px, py, 3.5, 0, Math.PI * 2);
+        ctx.fillStyle = '#00E5FF';
+        ctx.shadowColor = '#00E5FF';
+        ctx.shadowBlur = 12;
+        ctx.fill();
+        ctx.restore();
+      });
+
       currentNodes.forEach(node => {
         if (node.id === activeNodeId) return;
 
@@ -206,8 +245,8 @@ export default function App() {
           ctx.fillText(node.label, node.x, node.y + node.currentRadius + 18);
         } else {
           const glow = node.impactGlow || 0;
-          const currentRadius = node.currentRadius + glow * 3;
-          const currentGlowBlur = 20 + glow * 30;
+          const currentRadius = node.currentRadius + glow * 4;
+          const currentGlowBlur = 20 + glow * 35;
 
           ctx.save();
           ctx.beginPath();
@@ -220,7 +259,7 @@ export default function App() {
           ctx.strokeStyle = '#00E5FF';
           ctx.stroke();
 
-          // رسم الأيقونات المخصصة داخل الكانفاس
+          // الأيقونات المخصصة
           ctx.strokeStyle = '#00E5FF';
           ctx.lineWidth = 2;
           ctx.fillStyle = '#00E5FF';
@@ -514,44 +553,36 @@ export default function App() {
           )}
 
           {activeNode?.type === 'project' && (
-            <div className="flex-1 flex flex-col h-full dir-rtl text-right w-full justify-center">
-              <div className="modal-stagger w-full h-48 md:h-72 lg:h-[35vh] rounded-xl overflow-hidden relative mb-8 border border-white/10 group">
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0b0c10] via-transparent to-transparent z-10" />
-                <img 
-                  src={activeNode.image} 
-                  alt={activeNode.title}
-                  className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
-                />
-                <div className="absolute top-4 right-4 z-20 flex gap-2">
+            <div className="flex-1 flex flex-col h-full dir-rtl text-right w-full justify-center max-w-4xl mx-auto">
+              <div className="flex flex-col gap-6">
+                <div className="flex gap-2 mb-2">
                   {activeNode.tags?.map(tag => (
                     <span 
                       key={tag.label} 
-                      className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-md bg-black/50 border text-[#00E5FF] border-[#00E5FF]/50"
+                      className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[#00E5FF]/10 border text-[#00E5FF] border-[#00E5FF]/40"
                     >
                       {tag.label}
                     </span>
                   ))}
                 </div>
-              </div>
 
-              <div className="flex flex-col lg:flex-row justify-between items-start gap-8">
-                <div className="flex-1">
-                  <h2 className="modal-stagger text-3xl md:text-5xl font-bold mb-4 uppercase tracking-tighter text-[#00E5FF]" style={{ textShadow: `0 0 20px rgba(0,229,255,0.5)` }}>
-                    {activeNode.title}
-                  </h2>
-                  <p className="modal-stagger text-gray-300 text-lg leading-relaxed max-w-3xl">
-                    {activeNode.description}
-                  </p>
-                </div>
-                <div className="modal-stagger flex-shrink-0 flex flex-col gap-4 w-full lg:w-auto">
+                <h2 className="modal-stagger text-3xl md:text-5xl font-bold uppercase tracking-tighter text-[#00E5FF]" style={{ textShadow: `0 0 20px rgba(0,229,255,0.5)` }}>
+                  {activeNode.title}
+                </h2>
+
+                <p className="modal-stagger text-gray-300 text-lg md:text-xl leading-relaxed">
+                  {activeNode.description}
+                </p>
+
+                <div className="modal-stagger pt-4">
                   <a 
                     href={activeNode.link} 
                     target="_blank" 
                     rel="noreferrer"
-                    className="flex items-center justify-center gap-2 px-8 py-4 font-bold uppercase tracking-widest transition-all rounded-lg bg-[#00E5FF]/20 border border-[#00E5FF] text-[#00E5FF] shadow-[0_0_15px_rgba(0,229,255,0.4)] hover:bg-[#00E5FF]/30 cursor-pointer"
+                    className="inline-flex items-center justify-center gap-3 px-8 py-4 font-bold uppercase tracking-widest transition-all rounded-lg bg-[#00E5FF]/20 border border-[#00E5FF] text-[#00E5FF] shadow-[0_0_15px_rgba(0,229,255,0.4)] hover:bg-[#00E5FF]/30 cursor-pointer"
                   >
                     <ExternalLink size={20} />
-                    فتح رابط الموقع
+                    فتح الموقع
                   </a>
                 </div>
               </div>
