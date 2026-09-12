@@ -149,7 +149,6 @@ export default function App() {
         ctx.closePath();
       };
 
-      // الخيوط الرئيسية باللون الأزرق الموحد الهادئ
       for (let i = 0; i < STRANDS; i++) {
         const angle = i * stepAngle;
         const startX = center.x + Math.cos(angle) * frameRadius;
@@ -165,7 +164,6 @@ export default function App() {
         ctx.stroke();
       }
 
-      // الحلقات الدائرية
       for (let r = 2; r <= RINGS; r++) {
         const radius = (r / RINGS) * maxR;
         buildWebRingPath(radius);
@@ -174,7 +172,6 @@ export default function App() {
         ctx.stroke();
       }
 
-      // الخيوط الفرعية
       ctx.beginPath();
       state.microThreads.forEach(mt => {
         const a1 = mt.strand * stepAngle;
@@ -199,7 +196,6 @@ export default function App() {
       ctx.lineWidth = 0.5;
       ctx.stroke();
 
-      // النبضات العصبية
       state.pulses.forEach(p => {
         const targetNode = currentNodes.find(n => n.id === p.targetNodeId);
         if (!targetNode) return;
@@ -247,7 +243,6 @@ export default function App() {
         }
       });
 
-      // رسم العناصر والنقاط
       currentNodes.forEach(node => {
         if (node.id === activeNodeId) return;
 
@@ -397,7 +392,6 @@ export default function App() {
     }, 0.3);
   };
 
-  // دالة الإغلاق المحسنة التي تحل مشكلة التعليق تماماً
   const closeNode = () => {
     if (isAnimating || !activeNodeId) return;
     
@@ -523,34 +517,31 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* أزرار التواصل المحدثة (واتساب، اتصال، تيليجرام) */}
                 <div className="modal-stagger flex flex-wrap justify-center lg:justify-start gap-4">
-                  {/* زر واتساب */}
                   <a 
                     href="https://wa.me/201284302099" 
                     target="_blank" 
                     rel="noreferrer"
-                    className="p-3.5 px-5 rounded-xl bg-white/5 border border-white/10 hover:border-[#00E5FF] hover:text-[#00E5FF] hover:shadow-[0_0_15px_rgba(0,229,255,0.4)] transition-all flex items-center gap-2.5 font-bold text-sm"
+                    className="p-3.5 px-5 rounded-xl bg-white/5 border border-white/10 hover:border-[#00E5FF] hover:text-[#00E5FF] hover:shadow-[0_0_15px_rgba(0,229,255,0.4)] transition-all flex items-center gap-2.5 font-bold text-sm text-white"
                   >
                     <MessageSquare size={22} className="text-[#00E5FF]" />
                     <span>WhatsApp</span>
                   </a>
 
-                  {/* زر الاتصال الهاتفي */}
                   <a 
                     href="tel:01019920811" 
-                    className="p-3.5 px-5 rounded-xl bg-white/5 border border-white/10 hover:border-[#00E5FF] hover:text-[#00E5FF] hover:shadow-[0_0_15px_rgba(0,229,255,0.4)] transition-all flex items-center gap-2.5 font-bold text-sm"
+                    className="p-3.5 px-5 rounded-xl bg-white/5 border border-white/10 hover:border-[#00E5FF] hover:text-[#00E5FF] hover:shadow-[0_0_15px_rgba(0,229,255,0.4)] transition-all flex items-center gap-2.5 font-bold text-sm text-white"
                   >
                     <Phone size={22} className="text-[#00E5FF]" />
                     <span>Call</span>
                   </a>
 
-                  {/* زر تيليجرام للبوت */}
+                  {/* تم تعديل رابط التيليجرام هنا ليفتح بوتك Falcon2006_bot مباشرة */}
                   <a 
-                    href="https://t.me/BotFather" 
+                    href="https://t.me/Falcon2006_bot" 
                     target="_blank" 
                     rel="noreferrer"
-                    className="p-3.5 px-5 rounded-xl bg-white/5 border border-white/10 hover:border-[#00E5FF] hover:text-[#00E5FF] hover:shadow-[0_0_15px_rgba(0,229,255,0.4)] transition-all flex items-center gap-2.5 font-bold text-sm"
+                    className="p-3.5 px-5 rounded-xl bg-white/5 border border-white/10 hover:border-[#00E5FF] hover:text-[#00E5FF] hover:shadow-[0_0_15px_rgba(0,229,255,0.4)] transition-all flex items-center gap-2.5 font-bold text-sm text-white"
                   >
                     <Send size={22} className="text-[#00E5FF]" />
                     <span>Telegram</span>
