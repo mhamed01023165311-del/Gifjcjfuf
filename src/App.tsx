@@ -5,7 +5,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
-import { ExternalLink, X, Globe, Mail, MessageSquare, Code } from 'lucide-react';
+import { ExternalLink, X, Code, MessageSquare, Phone, Send } from 'lucide-react';
 import { NodeData, getInitialNodes, STRANDS, RINGS } from './data';
 
 export default function App() {
@@ -65,7 +65,7 @@ export default function App() {
         targetNodeId: pNode.id,
         progress: Math.random() * 0.6,
         speed: 0.005 + Math.random() * 0.003,
-        color: pNode.color
+        color: '#00E5FF'
       }));
       physicsState.current.pulses = pulses;
     };
@@ -149,7 +149,7 @@ export default function App() {
         ctx.closePath();
       };
 
-      // 1. الخيوط الرئيسية
+      // الخيوط الرئيسية باللون الأزرق الموحد الهادئ
       for (let i = 0; i < STRANDS; i++) {
         const angle = i * stepAngle;
         const startX = center.x + Math.cos(angle) * frameRadius;
@@ -160,21 +160,21 @@ export default function App() {
         ctx.beginPath();
         ctx.moveTo(startX, startY);
         ctx.lineTo(tx, ty);
-        ctx.strokeStyle = i % 2 === 0 ? `rgba(0, 229, 255, 0.18)` : `rgba(255, 0, 85, 0.18)`;
+        ctx.strokeStyle = `rgba(0, 229, 255, 0.15)`;
         ctx.lineWidth = 1.2;
         ctx.stroke();
       }
 
-      // 2. الحلقات الدائرية
+      // الحلقات الدائرية
       for (let r = 2; r <= RINGS; r++) {
         const radius = (r / RINGS) * maxR;
         buildWebRingPath(radius);
-        ctx.strokeStyle = r % 2 === 0 ? `rgba(255, 0, 127, 0.1)` : `rgba(0, 229, 255, 0.1)`;
+        ctx.strokeStyle = `rgba(0, 229, 255, 0.08)`;
         ctx.lineWidth = 0.8;
         ctx.stroke();
       }
 
-      // 3. الخيوط الفرعية
+      // الخيوط الفرعية
       ctx.beginPath();
       state.microThreads.forEach(mt => {
         const a1 = mt.strand * stepAngle;
@@ -195,11 +195,11 @@ export default function App() {
         
         ctx.quadraticCurveTo(cx, cy, x2, y2);
       });
-      ctx.strokeStyle = `rgba(255, 255, 255, 0.04)`;
+      ctx.strokeStyle = `rgba(255, 255, 255, 0.03)`;
       ctx.lineWidth = 0.5;
       ctx.stroke();
 
-      // 4. النبضات العصبية (Neural Pulses) - رفيعة ودقيقة داخل مسار الخيط
+      // النبضات العصبية
       state.pulses.forEach(p => {
         const targetNode = currentNodes.find(n => n.id === p.targetNodeId);
         if (!targetNode) return;
@@ -221,17 +221,14 @@ export default function App() {
           targetNode.impactGlow = 1.0; 
           p.progress = 0; 
         } else {
-          // رسم الشرارة العصبية: خط ساطع رفيع مع توهج دقيق
           ctx.save();
-          
-          // ذيل الشرارة الخفيف
           const tailLength = 15;
           const tailX = currentX - Math.cos(angle) * tailLength;
           const tailY = currentY - Math.sin(angle) * tailLength;
 
           const gradient = ctx.createLinearGradient(tailX, tailY, currentX, currentY);
           gradient.addColorStop(0, 'transparent');
-          gradient.addColorStop(1, p.color);
+          gradient.addColorStop(1, '#00E5FF');
 
           ctx.beginPath();
           ctx.moveTo(tailX, tailY);
@@ -240,19 +237,17 @@ export default function App() {
           ctx.lineWidth = 1.5;
           ctx.stroke();
 
-          // رأس الشرارة الدقيق جداً
           ctx.beginPath();
           ctx.arc(currentX, currentY, 1.2, 0, Math.PI * 2);
           ctx.fillStyle = '#ffffff';
-          ctx.shadowColor = p.color;
+          ctx.shadowColor = '#00E5FF';
           ctx.shadowBlur = 6;
           ctx.fill();
-          
           ctx.restore();
         }
       });
 
-      // رسم العناصر
+      // رسم العناصر والنقاط
       currentNodes.forEach(node => {
         if (node.id === activeNodeId) return;
 
@@ -273,9 +268,9 @@ export default function App() {
           
           ctx.save();
           buildWebRingPath(node.currentRadius);
-          ctx.strokeStyle = node.color || '#00E5FF';
+          ctx.strokeStyle = '#00E5FF';
           ctx.lineWidth = 3;
-          ctx.shadowColor = node.color || '#00E5FF';
+          ctx.shadowColor = '#00E5FF';
           ctx.shadowBlur = 20;
           ctx.stroke();
           ctx.restore();
@@ -293,8 +288,8 @@ export default function App() {
           ctx.save();
           ctx.beginPath();
           ctx.arc(node.x, node.y, currentRadius, 0, Math.PI * 2);
-          ctx.fillStyle = node.color;
-          ctx.shadowColor = node.color;
+          ctx.fillStyle = '#00E5FF';
+          ctx.shadowColor = '#00E5FF';
           ctx.shadowBlur = currentGlowBlur;
           ctx.fill();
 
@@ -355,12 +350,12 @@ export default function App() {
       top: node.y,
       width: node.currentRadius * 2,
       height: node.currentRadius * 2,
-      backgroundColor: node.color,
+      backgroundColor: '#00E5FF',
       borderRadius: node.type === 'profile' ? '40%' : '50%',
       xPercent: -50,
       yPercent: -50,
       opacity: 1,
-      boxShadow: `0 0 20px ${node.color}`,
+      boxShadow: `0 0 20px #00E5FF`,
       pointerEvents: 'auto'
     });
 
@@ -385,7 +380,7 @@ export default function App() {
       height: '100vh',
       backgroundColor: 'rgba(11, 12, 16, 0.95)',
       borderRadius: '0px',
-      boxShadow: `inset 0 0 50px rgba(${node.color === '#FF0055' ? '255,0,85' : '0,229,255'}, 0.2)`,
+      boxShadow: `inset 0 0 50px rgba(0, 229, 255, 0.2)`,
       border: `none`,
       duration: 0.7,
       ease: 'expo.out'
@@ -402,6 +397,7 @@ export default function App() {
     }, 0.3);
   };
 
+  // دالة الإغلاق المحسنة التي تحل مشكلة التعليق تماماً
   const closeNode = () => {
     if (isAnimating || !activeNodeId) return;
     
@@ -414,6 +410,7 @@ export default function App() {
       onComplete: () => {
         setActiveNodeId(null);
         setIsAnimating(false);
+        gsap.set(modalRef.current, { pointerEvents: 'none' });
       }
     });
 
@@ -431,30 +428,30 @@ export default function App() {
       top: node.y,
       width: node.currentRadius * 2,
       height: node.currentRadius * 2,
-      backgroundColor: node.color,
+      backgroundColor: '#00E5FF',
       borderRadius: node.type === 'profile' ? '40%' : '50%',
-      boxShadow: `0 0 35px ${node.color}`,
+      boxShadow: `0 0 35px #00E5FF`,
       border: `none`,
-      duration: 0.6,
+      duration: 0.5,
       ease: 'expo.inOut'
     }, 0.1);
 
     tl.to(canvasRef.current, {
       scale: 1,
-      duration: 0.6,
+      duration: 0.5,
       ease: 'expo.inOut'
     }, 0.1);
 
     tl.to(overlayRef.current, {
       opacity: 0,
       backdropFilter: 'blur(0px)',
-      duration: 0.4
-    }, 0.3);
+      duration: 0.3
+    }, 0.2);
 
     tl.to(modalRef.current, {
       opacity: 0,
       duration: 0.1
-    });
+    }, 0.5);
   };
 
   const activeNode = nodes.find(n => n.id === activeNodeId);
@@ -462,9 +459,9 @@ export default function App() {
   return (
     <div 
       ref={containerRef} 
-      className="relative w-full h-screen overflow-hidden bg-[#0b0c10] halftone-bg text-white selection:bg-[#FF0055] selection:text-white"
+      className="relative w-full h-screen overflow-hidden bg-[#0b0c10] halftone-bg text-white selection:bg-[#00E5FF] selection:text-black"
     >
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[60vw] bg-[#FF0055] opacity-5 blur-[150px] rounded-full pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[60vw] bg-[#00E5FF] opacity-5 blur-[150px] rounded-full pointer-events-none" />
 
       <canvas 
         ref={canvasRef} 
@@ -488,8 +485,7 @@ export default function App() {
           {activeNodeId && (
             <button 
               onClick={closeNode}
-              className="modal-stagger fixed top-8 right-8 md:top-12 md:right-12 p-3 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 hover:scale-110 transition-all z-30 backdrop-blur-md"
-              style={{ color: activeNode?.color, borderColor: activeNode?.color }}
+              className="modal-stagger fixed top-8 right-8 md:top-12 md:right-12 p-3 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 hover:scale-110 transition-all z-30 backdrop-blur-md text-[#00E5FF] border-[#00E5FF]/40"
             >
               <X size={32} />
             </button>
@@ -498,15 +494,15 @@ export default function App() {
           {activeNode?.type === 'profile' && (
             <div className="flex-1 flex flex-col lg:flex-row gap-8 items-center lg:items-start justify-center pt-8 dir-rtl text-right">
               <div className="modal-stagger flex-shrink-0 relative group">
-                <div className="absolute inset-0 bg-[#FF0055] blur-2xl opacity-20 group-hover:opacity-40 transition-opacity duration-500 rounded-full" />
+                <div className="absolute inset-0 bg-[#00E5FF] blur-2xl opacity-20 group-hover:opacity-40 transition-opacity duration-500 rounded-full" />
                 <img 
                   src={localProfilePath} 
                   alt="Avatar" 
-                  className="w-48 h-48 md:w-64 md:h-64 object-cover rounded-full border-2 border-[#FF0055] shadow-[0_0_30px_rgba(255,0,85,0.4)] relative z-10"
+                  className="w-48 h-48 md:w-64 md:h-64 object-cover rounded-full border-2 border-[#00E5FF] shadow-[0_0_30px_rgba(0,229,255,0.4)] relative z-10"
                 />
               </div>
               <div className="flex-1 flex flex-col items-center lg:items-start text-center lg:text-right">
-                <h1 className="modal-stagger text-3xl md:text-5xl font-bold glitch-text mb-2 tracking-tight">
+                <h1 className="modal-stagger text-3xl md:text-5xl font-bold glitch-text mb-2 tracking-tight text-white">
                   {activeNode.title}
                 </h1>
                 <p className="modal-stagger text-lg md:text-xl text-[#00E5FF] font-medium mb-6 tracking-wide">
@@ -517,7 +513,7 @@ export default function App() {
                 </p>
                 
                 <div className="modal-stagger w-full max-w-2xl mb-8">
-                  <h3 className="text-[#FF007F] font-bold uppercase tracking-wider mb-4 border-b border-[#FF007F]/30 pb-2">Tech Arsenal & Skills</h3>
+                  <h3 className="text-[#00E5FF] font-bold uppercase tracking-wider mb-4 border-b border-[#00E5FF]/30 pb-2">Tech Arsenal & Skills</h3>
                   <div className="flex flex-wrap justify-center lg:justify-start gap-3">
                     {activeNode.skills?.map(skill => (
                       <span key={skill} className="px-4 py-2 rounded-full text-sm font-semibold bg-white/5 border border-white/10 hover:border-[#00E5FF] hover:text-[#00E5FF] hover:shadow-[0_0_10px_rgba(0,229,255,0.3)] transition-all cursor-default">
@@ -527,15 +523,37 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="modal-stagger flex gap-4">
-                  <a href="#" className="p-3 rounded-xl bg-white/5 border border-white/10 hover:border-[#FF0055] hover:text-[#FF0055] hover:shadow-[0_0_15px_rgba(255,0,85,0.4)] transition-all">
-                    <Globe size={24} />
+                {/* أزرار التواصل المحدثة (واتساب، اتصال، تيليجرام) */}
+                <div className="modal-stagger flex flex-wrap justify-center lg:justify-start gap-4">
+                  {/* زر واتساب */}
+                  <a 
+                    href="https://wa.me/201284302099" 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="p-3.5 px-5 rounded-xl bg-white/5 border border-white/10 hover:border-[#00E5FF] hover:text-[#00E5FF] hover:shadow-[0_0_15px_rgba(0,229,255,0.4)] transition-all flex items-center gap-2.5 font-bold text-sm"
+                  >
+                    <MessageSquare size={22} className="text-[#00E5FF]" />
+                    <span>WhatsApp</span>
                   </a>
-                  <a href="#" className="p-3 rounded-xl bg-white/5 border border-white/10 hover:border-[#00E5FF] hover:text-[#00E5FF] hover:shadow-[0_0_15px_rgba(0,229,255,0.4)] transition-all">
-                    <MessageSquare size={24} />
+
+                  {/* زر الاتصال الهاتفي */}
+                  <a 
+                    href="tel:01019920811" 
+                    className="p-3.5 px-5 rounded-xl bg-white/5 border border-white/10 hover:border-[#00E5FF] hover:text-[#00E5FF] hover:shadow-[0_0_15px_rgba(0,229,255,0.4)] transition-all flex items-center gap-2.5 font-bold text-sm"
+                  >
+                    <Phone size={22} className="text-[#00E5FF]" />
+                    <span>Call</span>
                   </a>
-                  <a href="#" className="p-3 rounded-xl bg-white/5 border border-white/10 hover:border-[#FF007F] hover:text-[#FF007F] hover:shadow-[0_0_15px_rgba(255,0,127,0.4)] transition-all">
-                    <Mail size={24} />
+
+                  {/* زر تيليجرام للبوت */}
+                  <a 
+                    href="https://t.me/BotFather" 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="p-3.5 px-5 rounded-xl bg-white/5 border border-white/10 hover:border-[#00E5FF] hover:text-[#00E5FF] hover:shadow-[0_0_15px_rgba(0,229,255,0.4)] transition-all flex items-center gap-2.5 font-bold text-sm"
+                  >
+                    <Send size={22} className="text-[#00E5FF]" />
+                    <span>Telegram</span>
                   </a>
                 </div>
               </div>
@@ -555,8 +573,7 @@ export default function App() {
                   {activeNode.tags?.map(tag => (
                     <span 
                       key={tag.label} 
-                      className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-md bg-black/50 border"
-                      style={{ color: tag.color, borderColor: tag.color }}
+                      className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-md bg-black/50 border text-[#00E5FF] border-[#00E5FF]/50"
                     >
                       {tag.label}
                     </span>
@@ -566,7 +583,7 @@ export default function App() {
 
               <div className="flex flex-col lg:flex-row justify-between items-start gap-8">
                 <div className="flex-1">
-                  <h2 className="modal-stagger text-3xl md:text-5xl font-bold mb-4 uppercase tracking-tighter" style={{ color: activeNode.color, textShadow: `0 0 20px ${activeNode.color}` }}>
+                  <h2 className="modal-stagger text-3xl md:text-5xl font-bold mb-4 uppercase tracking-tighter text-[#00E5FF]" style={{ textShadow: `0 0 20px rgba(0,229,255,0.5)` }}>
                     {activeNode.title}
                   </h2>
                   <p className="modal-stagger text-gray-300 text-lg leading-relaxed max-w-3xl">
@@ -578,13 +595,7 @@ export default function App() {
                     href={activeNode.link} 
                     target="_blank" 
                     rel="noreferrer"
-                    className="flex items-center justify-center gap-2 px-8 py-4 font-bold uppercase tracking-widest transition-all rounded-lg"
-                    style={{ 
-                      backgroundColor: `${activeNode.color}20`,
-                      border: `1px solid ${activeNode.color}`,
-                      color: activeNode.color,
-                      boxShadow: `0 0 15px ${activeNode.color}40, inset 0 0 10px ${activeNode.color}20`
-                    }}
+                    className="flex items-center justify-center gap-2 px-8 py-4 font-bold uppercase tracking-widest transition-all rounded-lg bg-[#00E5FF]/20 border border-[#00E5FF] text-[#00E5FF] shadow-[0_0_15px_rgba(0,229,255,0.4)]"
                   >
                     <ExternalLink size={20} />
                     Live Preview
